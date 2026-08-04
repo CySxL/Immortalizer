@@ -26,26 +26,26 @@
 - Added CC Support for quick actions
 - Added an option to lock an app in app switcher
 - Added an option to have a lock indicator on both SpringBoard and app switcher
-### v2.5.2
-- Toast sits higher in landscape and its contents are centred on the midline in both orientations
-### v2.5
-- Fixed an app launched straight into a window by another tweak being killed a second later
-- The toast is centred correctly in landscape and its contents sit on the midline
-- The CC tile glyph now flips when the app is immortalized
-### v2.4
-- The state indicator now distinguishes a running app from a stopped one instead of always showing the same accessory
-- The toast lives in its own window, so closing an app from the switcher no longer makes it vanish mid-animation
-- Toast auto-hide starts when the toast is shown rather than when it is built
-- Alerts are no longer dropped when something else is already presenting
+##### v2.0.0-1 [minor]
+- Fixed a bug where immortalizer has conflicts with other notification tweaks (Glance)
+- Fixed a bug in CC where Disable button is not reflecting in the UI immediately
 ### v2.3
 - Added roothide support
 - Scene deactivation is no longer blocked system-wide when the tweak is disabled or nothing is immortalized
 - Immortalized/locked lists are kept in memory instead of being re-read from preferences inside the icon, switcher and scene hooks
 - Fixed CC menu actions writing back a stale copy of the lists
 - Fixed a leaked notification token that kept the CC menu controller alive
-##### v2.0.0-1 [minor]
-- Fixed a bug where immortalizer has conflicts with other notification tweaks (Glance)
-- Fixed a bug in CC where Disable button is not reflecting in the UI immediately
+### v2.4
+- The state indicator now distinguishes a running app from a stopped one instead of always showing the same accessory
+- The toast lives in its own window, so closing an app from the switcher no longer makes it vanish mid-animation
+- Toast auto-hide starts when the toast is shown rather than when it is built
+- Alerts are no longer dropped when something else is already presenting
+### v2.5
+- Fixed an app launched straight into a window by another tweak being killed a second later
+- The toast is centred correctly in landscape and its contents sit on the midline
+- The CC tile glyph now flips when the app is immortalized
+### v2.5.2
+- Toast sits higher in landscape and its contents are centred on the midline in both orientations
 
 ## Building
 
