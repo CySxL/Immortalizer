@@ -49,6 +49,23 @@ static long long accessoryTypeForBundle(NSString *bundleIdentifier) {
     return state.pid > 0 ? 4 : 2;
 }
 
+// A scene has to be configured once before it means anything to keep it in the
+// foreground, and swallowing that first update is what kills an app launched
+// straight into a window.
+static BOOL sceneWasConfigured(id scene) {
+    static NSHashTable *scenes = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        scenes = [NSHashTable weakObjectsHashTable];
+    });
+
+    @synchronized (scenes) {
+        if ([scenes containsObject:scene]) return YES;
+        [scenes addObject:scene];
+        return NO;
+    }
+}
+
 static Ivar rolesToLayoutItemsIvar(void) {
     static Ivar ivar = NULL;
     static dispatch_once_t onceToken;
@@ -145,8 +162,9 @@ static Ivar rolesToLayoutItemsIvar(void) {
 
 %hook FBScene
 -(void)updateSettings:(id)arg1 withTransitionContext:(id)arg2 completion:(id)arg3{
+    BOOL configured = sceneWasConfigured(self);
     FBProcess *process = self.clientProcess;
-    if (immortalizerEnabled && process) {
+    if (configured && immortalizerEnabled && process) {
         NSString *bundleIdentifier = process.bundleIdentifier;
         Immortalizer *immortalizer = [Immortalizer sharedInstance];
 
