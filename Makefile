@@ -10,6 +10,10 @@ Immortalizer_FRAMEWORKS = UIKit CoreGraphics
 Immortalizer_PRIVATE_FRAMEWORKS = UIKitCore FrontBoardServices BackBoardServices FrontBoard
 Immortalizer_CFLAGS = -fobjc-arc
 
+ifeq ($(THEOS_PACKAGE_SCHEME),roothide)
+Immortalizer_LDFLAGS += -lroothide
+endif
+
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 SUBPROJECTS += ImmortalizerPrefs

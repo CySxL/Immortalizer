@@ -10,4 +10,8 @@ ImmortalizerCC_FRAMEWORKS = UIKit
 ImmortalizerCC_PRIVATE_FRAMEWORKS = ControlCenterUIKit
 ImmortalizerCC_INSTALL_PATH = /Library/ControlCenter/Bundles
 
+ifeq ($(THEOS_PACKAGE_SCHEME),roothide)
+ImmortalizerCC_LDFLAGS += -lroothide
+endif
+
 include $(THEOS_MAKE_PATH)/bundle.mk
