@@ -98,14 +98,14 @@ static NSSet *storedBundles(NSString *key) {
 }
 
 -(NSArray *)getNotificationEnabledApps {
+    // Written by Settings, so this is read fresh rather than cached.
     NSUserDefaults *prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
-    NSArray *selectedApps = [prefs objectForKey:@"selectedApplications"];
-    return selectedApps;
+    return [prefs arrayForKey:@"selectedApplications"];
 }
 
 -(BOOL)isNotificationEnabledForBundleIdentifier:(NSString *)bundleIdentifier {
-    NSArray *selectedApps = [self getNotificationEnabledApps];
-    return [selectedApps containsObject:bundleIdentifier];
+    if (!bundleIdentifier) return NO;
+    return [[self getNotificationEnabledApps] containsObject:bundleIdentifier];
 }
 
 -(void)storeBundles:(NSSet *)bundles forKey:(NSString *)key {
