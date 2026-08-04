@@ -80,10 +80,6 @@
         self.containerView.backgroundColor = [UIColor colorWithRed:0.125 green:0.125 blue:0.125 alpha:1.0];
         self.containerView.layer.cornerRadius = 25;
         self.containerView.layer.masksToBounds = YES;
-        self.containerView.layer.shadowColor = [UIColor blackColor].CGColor;
-        self.containerView.layer.shadowOpacity = 0.18;
-        self.containerView.layer.shadowOffset = CGSizeMake(0, 8);
-        self.containerView.layer.shadowRadius = 10;
         self.containerView.translatesAutoresizingMaskIntoConstraints = NO;
         [self addSubview:self.containerView];
 
