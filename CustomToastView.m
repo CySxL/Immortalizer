@@ -19,15 +19,27 @@
 
 @implementation CustomToastView
 
--(UIWindow *)getKeyWindow {
-    NSArray *windows = [UIApplication sharedApplication].windows;
-    for (UIWindow *window in [windows reverseObjectEnumerator]) {
-        if (window.isKeyWindow) return window;
+// Borrowing a system window means the toast is torn down with it, which is what
+// happens on the way out of the switcher.
++(UIWindow *)toastWindow {
+    static UIWindow *window = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
+        window.windowLevel = UIWindowLevelAlert + 1000;
+        window.backgroundColor = [UIColor clearColor];
+        window.userInteractionEnabled = NO;
+        window.rootViewController = [[UIViewController alloc] init];
+    });
+    return window;
+}
+
++(void)hideWindowIfEmpty {
+    UIWindow *window = [self toastWindow];
+    for (UIView *subview in window.subviews) {
+        if ([subview isKindOfClass:[CustomToastView class]]) return;
     }
-    for (UIWindow *window in [windows reverseObjectEnumerator]) {
-        if (window.hidden == NO && window.alpha > 0) return window;
-    }
-    return nil;
+    window.hidden = YES;
 }
 
 -(instancetype)initWithTitle:(NSString *)title subtitle:(NSString *)subtitle icon:(UIImage *)icon autoHide:(int)seconds {
@@ -112,28 +124,28 @@
 }
 
 -(void)presentToast {
-    UIWindow *keyWindow = [self getKeyWindow];
-    
-    if (!keyWindow) return;
+    UIWindow *window = [CustomToastView toastWindow];
 
-    for (UIView *subview in keyWindow.subviews) {
+    for (UIView *subview in [window.subviews copy]) {
         if ([subview isKindOfClass:[CustomToastView class]]) {
             [(CustomToastView *)subview hideWithAnimation];
         }
     }
 
-    [keyWindow addSubview:self];
-    
+    window.frame = UIScreen.mainScreen.bounds;
+    window.hidden = NO;
+    [window addSubview:self];
+
     self.translatesAutoresizingMaskIntoConstraints = NO;
-    
+
     [NSLayoutConstraint activateConstraints:@[
-        [self.centerXAnchor constraintEqualToAnchor:keyWindow.centerXAnchor],
-        [self.topAnchor constraintEqualToAnchor:keyWindow.topAnchor constant:40],
-        [self.widthAnchor constraintEqualToConstant:MAX(keyWindow.bounds.size.width - 190, 180)],
+        [self.centerXAnchor constraintEqualToAnchor:window.centerXAnchor],
+        [self.topAnchor constraintEqualToAnchor:window.topAnchor constant:40],
+        [self.widthAnchor constraintEqualToConstant:MAX(window.bounds.size.width - 190, 180)],
         [self.heightAnchor constraintEqualToConstant:70]
     ]];
 
-    [keyWindow layoutIfNeeded];
+    [window layoutIfNeeded];
 
     self.transform = CGAffineTransformMakeTranslation(0, -self.bounds.size.height);
 
@@ -148,7 +160,9 @@
     [UIView animateWithDuration:0.2  animations:^{
         self.transform = CGAffineTransformMakeTranslation(0, -self.bounds.size.height - 30);
     } completion:^(BOOL finished) {
-        if (finished) [self removeFromSuperview];
+        // Not conditional on finished, an interrupted animation would strand the toast.
+        [self removeFromSuperview];
+        [CustomToastView hideWindowIfEmpty];
     }];
 }
 
