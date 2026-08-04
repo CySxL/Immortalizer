@@ -15,19 +15,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>. 
 */
 
-#if defined __cplusplus
-extern "C" {
-#endif
-CGFloat CCUISliderExpandedContentModuleHeight();
-CGFloat CCUISliderExpandedContentModuleWidth();
-CGFloat CCUIExpandedModuleContinuousCornerRadius();
-CGFloat CCUICompactModuleContinuousCornerRadius();
-CGFloat CCUIDefaultExpandedContentModuleWidth();
-CGFloat CCUIMaximumExpandedContentModuleHeight();
-#if defined __cplusplus
-};
-#endif
-
 #import <notify.h>
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
@@ -35,6 +22,14 @@ CGFloat CCUIMaximumExpandedContentModuleHeight();
 #import "Headers.h"
 #import "../Immortalizer.h"
 #import "ImmortalizerCC.h"
+
+#if defined __cplusplus
+extern "C" {
+#endif
+CGFloat CCUIDefaultExpandedContentModuleWidth(void);
+#if defined __cplusplus
+};
+#endif
 
 
 @interface ImmortalizerCCUIMenuModuleViewController : CCUIMenuModuleViewController

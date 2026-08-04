@@ -17,7 +17,7 @@
 
 #import <UIKit/UIKit.h>
 #import <ControlCenterUIKit/CCUIToggleModule.h>
-#import <ControlCenterUIKit/CCUIMenuModuleViewController.h>
+#import "CCUIMenuModuleViewController.h"
 
 @interface ImmortalizerCC : CCUIToggleModule
 @property (nonatomic, assign) BOOL expandOnTap;
