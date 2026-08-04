@@ -26,6 +26,10 @@
 - Added CC Support for quick actions
 - Added an option to lock an app in app switcher
 - Added an option to have a lock indicator on both SpringBoard and app switcher
+### v2.5
+- Fixed an app launched straight into a window by another tweak being killed a second later
+- The toast is centred correctly in landscape and its contents sit on the midline
+- The CC tile glyph now flips when the app is immortalized
 ### v2.4
 - The state indicator now distinguishes a running app from a stopped one instead of always showing the same accessory
 - The toast lives in its own window, so closing an app from the switcher no longer makes it vanish mid-animation
