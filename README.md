@@ -34,12 +34,9 @@
 ### v2.3
 - Added roothide support
 - Scene deactivation is no longer blocked system-wide when the tweak is disabled or nothing is immortalized
-- The scene update completion handler is no longer dropped for immortalized apps
 - Immortalized/locked lists are kept in memory instead of being re-read from preferences inside the icon, switcher and scene hooks
 - Fixed CC menu actions writing back a stale copy of the lists
 - Fixed a leaked notification token that kept the CC menu controller alive
-##### v2.3.1 [minor]
-- Fixed a crash on launching an immortalized app: the scene update completion is a stack block and has to be copied before it can be called later
 ##### v2.0.0-1 [minor]
 - Fixed a bug where immortalizer has conflicts with other notification tweaks (Glance)
 - Fixed a bug in CC where Disable button is not reflecting in the UI immediately
