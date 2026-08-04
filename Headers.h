@@ -15,7 +15,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>. 
 */
 
-@interface SBApplicationProcessState 
+@interface SBApplicationProcessState : NSObject
+@property (nonatomic,readonly) int pid;
 @end
 
 @interface SBApplication : NSObject

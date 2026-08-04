@@ -38,6 +38,17 @@ static NSData *shortcutIconData(void) {
     return data;
 }
 
+// processState is a non-nil object whenever the application object exists, so it
+// only says whether the app is running once you look at the pid.
+static long long accessoryTypeForBundle(NSString *bundleIdentifier) {
+    SBApplication *app = [[objc_getClass("SBApplicationController") sharedInstance] applicationWithBundleIdentifier:bundleIdentifier];
+    SBApplicationProcessState *state = app.processState;
+
+    if (!state) return 2;
+    if (![state respondsToSelector:@selector(pid)]) return 4;
+    return state.pid > 0 ? 4 : 2;
+}
+
 static Ivar rolesToLayoutItemsIvar(void) {
     static Ivar ivar = NULL;
     static dispatch_once_t onceToken;
@@ -102,18 +113,15 @@ static void runSceneCompletionLater(id completion) {
         Immortalizer *immortalizer = [Immortalizer sharedInstance];
         BOOL isDocked = [self.location containsString:@"Dock"];
 
-        if (isDocked && [immortalizer isImmortalized:[self.icon applicationBundleID]]) {
-            SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:[self.icon applicationBundleID]];
-            accessory = app.processState ? 4 : 2;
-        }
+        if (isDocked && [immortalizer isImmortalized:[self.icon applicationBundleID]])
+            accessory = accessoryTypeForBundle([self.icon applicationBundleID]);
 
         if (!isFolderTransitioning && [self.icon isKindOfClass:[%c(SBFolderIcon) class]]) {
             SBFolder *folder = [(SBFolderIcon *)self.icon folder];
 
             for (SBIcon *icon in [folder icons]) {
                 if ([immortalizer isImmortalized:[icon applicationBundleID]]) {
-                    SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:[icon applicationBundleID]];
-                    accessory = app.processState ? 4 : 2;
+                    accessory = accessoryTypeForBundle([icon applicationBundleID]);
                     break;
                 }
             }
@@ -195,10 +203,8 @@ static void runSceneCompletionLater(id completion) {
 -(long long)labelAccessoryTypeForIcon:(id)arg1 {
     long long accessory = %orig;
     if (immortalizerEnabled && isIndicatorEnabled) {
-        if ([[Immortalizer sharedInstance] isImmortalized:self.bundleIdentifier]) {
-            SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:self.bundleIdentifier];
-            accessory = app.processState ? 4 : 2;
-        }
+        if ([[Immortalizer sharedInstance] isImmortalized:self.bundleIdentifier])
+            accessory = accessoryTypeForBundle(self.bundleIdentifier);
     }
     return accessory;
 }
