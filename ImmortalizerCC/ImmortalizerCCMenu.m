@@ -18,31 +18,39 @@
 #import "ImmortalizerCCMenu.h"
 #import "Localizer.h"
 
-@implementation ImmortalizerCCUIMenuModuleViewController
-- (instancetype)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil{
-    int token3;
-    notify_register_dispatch("com.sergy.immortalizer.updatecc", &token3, dispatch_get_main_queue(), ^(int token3) {
-        SBApplication *frontMostApp = [(SpringBoard *)UIApplication.sharedApplication _accessibilityFrontMostApplication];
-        NSUserDefaults *const prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
-        BOOL immortalizerStatus = [prefs objectForKey:@"isEnabled"] ? [prefs boolForKey:@"isEnabled"] : YES;
-        Immortalizer *immortalizer = [objc_getClass("Immortalizer") sharedInstance];
-        if (frontMostApp && immortalizerStatus) {
-            if ([immortalizer isImmortalized:frontMostApp.bundleIdentifier]) {
-                [self setSelected:YES];
-            } else {
-                [self setSelected:NO];
-            }
-        } else
-            [self setSelected:NO];
-    });
+@implementation ImmortalizerCCUIMenuModuleViewController {
+    int _updateToken;
+    BOOL _observing;
+}
 
+- (instancetype)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil{
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
-    UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:30 weight:UIImageSymbolWeightRegular];
-	self.glyphImage = [[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] imageByApplyingSymbolConfiguration:config];
-	self.selectedGlyphImage = [[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] imageByApplyingSymbolConfiguration:config];
-	self.selectedGlyphColor = [UIColor blueColor];
-    self.title = @"Immortalizer";
+    if (self) {
+        __weak typeof(self) weakSelf = self;
+        _observing = notify_register_dispatch("com.sergy.immortalizer.updatecc", &_updateToken, dispatch_get_main_queue(), ^(int token) {
+            [weakSelf refreshSelectedState];
+        }) == NOTIFY_STATUS_OK;
+
+        UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:30 weight:UIImageSymbolWeightRegular];
+        self.glyphImage = [[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] imageByApplyingSymbolConfiguration:config];
+        self.selectedGlyphImage = [[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] imageByApplyingSymbolConfiguration:config];
+        self.selectedGlyphColor = [UIColor blueColor];
+        self.title = @"Immortalizer";
+    }
     return self;
+}
+
+- (void)dealloc {
+    if (_observing) notify_cancel(_updateToken);
+}
+
+- (void)refreshSelectedState {
+    SBApplication *frontMostApp = [(SpringBoard *)UIApplication.sharedApplication _accessibilityFrontMostApplication];
+    NSUserDefaults *const prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
+    BOOL immortalizerStatus = [prefs objectForKey:@"isEnabled"] ? [prefs boolForKey:@"isEnabled"] : YES;
+    Immortalizer *immortalizer = [objc_getClass("Immortalizer") sharedInstance];
+
+    [self setSelected:(immortalizerStatus && [immortalizer isImmortalized:frontMostApp.bundleIdentifier])];
 }
 
 - (void)viewWillAppear:(BOOL)animated{
