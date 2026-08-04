@@ -63,7 +63,7 @@
 
 +(void)hideWindowIfEmpty {
     UIWindow *window = [self toastWindow];
-    for (UIView *subview in window.subviews) {
+    for (UIView *subview in window.rootViewController.view.subviews) {
         if ([subview isKindOfClass:[CustomToastView class]]) return;
     }
     window.hidden = YES;
@@ -138,11 +138,13 @@
             [self.containerView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-10]
         ]];
 
+        // Centred rather than pinned top and bottom, so the row sits on the
+        // container's midline whatever the labels come out at.
         [NSLayoutConstraint activateConstraints:@[
             [self.hStack.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor],
             [self.hStack.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor],
-            [self.hStack.topAnchor constraintEqualToAnchor:self.containerView.topAnchor],
-            [self.hStack.bottomAnchor constraintEqualToAnchor:self.containerView.bottomAnchor]
+            [self.hStack.centerYAnchor constraintEqualToAnchor:self.containerView.centerYAnchor],
+            [self.hStack.topAnchor constraintGreaterThanOrEqualToAnchor:self.containerView.topAnchor]
         ]];
 
         self.autoHideDelay = seconds;
@@ -151,39 +153,39 @@
 }
 
 -(void)presentToast {
-    BOOL ownWindow = YES;
+    // The root controller's view rotates with the interface, the window does not.
+    UIView *container = nil;
     UIWindow *window = [CustomToastView toastWindow];
-    if (!window) {
-        ownWindow = NO;
-        window = [CustomToastView borrowedWindow];
+    if (window) {
+        if (CGRectIsEmpty(window.bounds)) window.frame = window.windowScene.coordinateSpace.bounds;
+        window.hidden = NO;
+        container = window.rootViewController.view;
+    } else {
+        container = [CustomToastView borrowedWindow];
     }
-    if (!window) return;
+    if (!container) return;
 
-    for (UIView *subview in [window.subviews copy]) {
+    for (UIView *subview in [container.subviews copy]) {
         if ([subview isKindOfClass:[CustomToastView class]]) {
             [(CustomToastView *)subview hideWithAnimation];
         }
     }
 
-    if (ownWindow) {
-        window.frame = window.windowScene.coordinateSpace.bounds;
-        window.hidden = NO;
-    }
-    [window addSubview:self];
+    [container addSubview:self];
 
     self.translatesAutoresizingMaskIntoConstraints = NO;
 
     // Off the short side, so the toast is the same size in both orientations.
-    CGFloat shortSide = MIN(window.bounds.size.width, window.bounds.size.height);
+    CGFloat shortSide = MIN(container.bounds.size.width, container.bounds.size.height);
 
     [NSLayoutConstraint activateConstraints:@[
-        [self.centerXAnchor constraintEqualToAnchor:window.centerXAnchor],
-        [self.topAnchor constraintEqualToAnchor:window.topAnchor constant:40],
+        [self.centerXAnchor constraintEqualToAnchor:container.centerXAnchor],
+        [self.topAnchor constraintEqualToAnchor:container.topAnchor constant:40],
         [self.widthAnchor constraintEqualToConstant:MAX(shortSide - 190, 180)],
         [self.heightAnchor constraintEqualToConstant:70]
     ]];
 
-    [window layoutIfNeeded];
+    [container layoutIfNeeded];
 
     self.transform = CGAffineTransformMakeTranslation(0, -self.bounds.size.height);
 
