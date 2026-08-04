@@ -26,6 +26,8 @@
 - Added CC Support for quick actions
 - Added an option to lock an app in app switcher
 - Added an option to have a lock indicator on both SpringBoard and app switcher
+### v2.5.2
+- Toast sits higher in landscape and its contents are centred on the midline in both orientations
 ### v2.5
 - Fixed an app launched straight into a window by another tweak being killed a second later
 - The toast is centred correctly in landscape and its contents sit on the midline
