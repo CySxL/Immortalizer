@@ -47,6 +47,45 @@ static Ivar rolesToLayoutItemsIvar(void) {
     return ivar;
 }
 
+#define BLOCK_HAS_COPY_DISPOSE (1 << 25)
+#define BLOCK_HAS_SIGNATURE (1 << 30)
+
+struct ImmortalizerBlock {
+    void *isa;
+    int flags;
+    int reserved;
+    void *invoke;
+    struct { unsigned long reserved; unsigned long size; } *descriptor;
+};
+
+// The completion is untyped in every header dump, so match its real arity.
+static void runSceneCompletion(id completion) {
+    struct ImmortalizerBlock *block = (__bridge struct ImmortalizerBlock *)completion;
+    if (!(block->flags & BLOCK_HAS_SIGNATURE)) return;
+
+    char *field = (char *)block->descriptor + sizeof(unsigned long) * 2;
+    if (block->flags & BLOCK_HAS_COPY_DISPOSE) field += sizeof(void *) * 2;
+
+    const char *types = *(const char **)field;
+    if (!types) return;
+
+    NSMethodSignature *signature = [NSMethodSignature signatureWithObjCTypes:types];
+    if (signature.numberOfArguments == 1)
+        ((void (^)(void))completion)();
+    else if (signature.numberOfArguments == 2 && strcmp([signature getArgumentTypeAtIndex:1], @encode(BOOL)) == 0)
+        ((void (^)(BOOL))completion)(YES);
+}
+
+// FrontBoard passes a stack block, and retaining one of those is a no-op.
+static void runSceneCompletionLater(id completion) {
+    if (![completion isKindOfClass:objc_getClass("NSBlock")]) return;
+
+    id heapCompletion = [completion copy];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        runSceneCompletion(heapCompletion);
+    });
+}
+
 %group init
 
 %hook SpringBoard
@@ -162,6 +201,7 @@ static Ivar rolesToLayoutItemsIvar(void) {
 
         if (arg2 == nil && [immortalizer isImmortalized:bundleIdentifier]) {
             [immortalizer updateAccessoryForBundle:bundleIdentifier];
+            runSceneCompletionLater(arg3);
             return;
         }
     }
