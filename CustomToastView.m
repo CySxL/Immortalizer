@@ -20,18 +20,45 @@
 @implementation CustomToastView
 
 // Borrowing a system window means the toast is torn down with it, which is what
-// happens on the way out of the switcher.
+// happens on the way out of the switcher. A window of our own needs a scene to
+// render, so fall back to borrowing one when there is nothing to attach to.
++(UIWindowScene *)activeWindowScene {
+    UIWindowScene *fallback = nil;
+    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+        if (![scene isKindOfClass:[UIWindowScene class]]) continue;
+        if (scene.activationState == UISceneActivationStateForegroundActive) return (UIWindowScene *)scene;
+        if (!fallback) fallback = (UIWindowScene *)scene;
+    }
+    return fallback;
+}
+
 +(UIWindow *)toastWindow {
+    UIWindowScene *scene = [self activeWindowScene];
+    if (!scene) return nil;
+
     static UIWindow *window = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
+        window = [[UIWindow alloc] initWithWindowScene:scene];
         window.windowLevel = UIWindowLevelAlert + 1000;
         window.backgroundColor = [UIColor clearColor];
         window.userInteractionEnabled = NO;
         window.rootViewController = [[UIViewController alloc] init];
     });
+
+    window.windowScene = scene;
     return window;
+}
+
++(UIWindow *)borrowedWindow {
+    NSArray *windows = UIApplication.sharedApplication.windows;
+    for (UIWindow *window in [windows reverseObjectEnumerator]) {
+        if (window.isKeyWindow) return window;
+    }
+    for (UIWindow *window in [windows reverseObjectEnumerator]) {
+        if (!window.hidden && window.alpha > 0) return window;
+    }
+    return nil;
 }
 
 +(void)hideWindowIfEmpty {
@@ -124,7 +151,13 @@
 }
 
 -(void)presentToast {
+    BOOL ownWindow = YES;
     UIWindow *window = [CustomToastView toastWindow];
+    if (!window) {
+        ownWindow = NO;
+        window = [CustomToastView borrowedWindow];
+    }
+    if (!window) return;
 
     for (UIView *subview in [window.subviews copy]) {
         if ([subview isKindOfClass:[CustomToastView class]]) {
@@ -132,8 +165,10 @@
         }
     }
 
-    window.frame = UIScreen.mainScreen.bounds;
-    window.hidden = NO;
+    if (ownWindow) {
+        window.frame = window.windowScene.coordinateSpace.bounds;
+        window.hidden = NO;
+    }
     [window addSubview:self];
 
     self.translatesAutoresizingMaskIntoConstraints = NO;
