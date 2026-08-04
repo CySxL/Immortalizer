@@ -187,7 +187,7 @@
 
     [NSLayoutConstraint activateConstraints:@[
         [self.centerXAnchor constraintEqualToAnchor:container.centerXAnchor],
-        [self.topAnchor constraintEqualToAnchor:container.topAnchor constant:(landscape ? 8 : 40)],
+        [self.topAnchor constraintEqualToAnchor:container.topAnchor constant:(landscape ? 6 : 40)],
         [self.widthAnchor constraintEqualToConstant:MAX(shortSide - 190, 180)],
         [self.heightAnchor constraintEqualToConstant:70]
     ]];
