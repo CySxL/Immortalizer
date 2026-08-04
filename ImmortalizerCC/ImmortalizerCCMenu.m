@@ -25,9 +25,9 @@
         SBApplication *frontMostApp = [(SpringBoard *)UIApplication.sharedApplication _accessibilityFrontMostApplication];
         NSUserDefaults *const prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
         BOOL immortalizerStatus = [prefs objectForKey:@"isEnabled"] ? [prefs boolForKey:@"isEnabled"] : YES;
+        Immortalizer *immortalizer = [objc_getClass("Immortalizer") sharedInstance];
         if (frontMostApp && immortalizerStatus) {
-            NSArray *immortalBundleIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:@"ImmortalForegroundBundleIDs"]; 
-            if ([immortalBundleIDs containsObject:frontMostApp.bundleIdentifier]) {
+            if ([immortalizer isImmortalized:frontMostApp.bundleIdentifier]) {
                 [self setSelected:YES];
             } else {
                 [self setSelected:NO];
@@ -60,26 +60,15 @@
     BOOL isToastEnabled = [prefs objectForKey:@"isToastEnabled"] ? [prefs boolForKey:@"isToastEnabled"] : YES;
     if (immortalizerStatus) {
         if (frontMostApp) {
-            NSMutableArray *immortalBundleIDs = [[[NSUserDefaults standardUserDefaults] arrayForKey:@"ImmortalForegroundBundleIDs"] mutableCopy];
-            if (!immortalBundleIDs) immortalBundleIDs = [NSMutableArray array];
-            BOOL isFrontAppImmortalized = [immortalBundleIDs containsObject:frontMostApp.bundleIdentifier];
-            if (isFrontAppImmortalized) {
-                [immortalBundleIDs removeObject:frontMostApp.bundleIdentifier];
-                if (isToastEnabled)
-                    [immortalizer showToastWithTitle:frontMostApp.displayName subtitle:localizer(@"AT_REST") icon:[UIImage systemImageNamed:@"arrow.uturn.left.circle.fill"] autoHide:3.0];
-                [[NSUserDefaults standardUserDefaults] setObject:immortalBundleIDs forKey:@"ImmortalForegroundBundleIDs"];
-                [[NSUserDefaults standardUserDefaults] synchronize];
-                [immortalizer updateAccessoryForBundle:frontMostApp.bundleIdentifier];
-                [self setSelected:NO];
-            } else {
-                [immortalBundleIDs addObject:frontMostApp.bundleIdentifier];
-                if (isToastEnabled)
-                    [immortalizer showToastWithTitle:frontMostApp.displayName subtitle:localizer(@"IMMORTALIZED") icon:[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] autoHide:3.0];
-                [[NSUserDefaults standardUserDefaults] setObject:immortalBundleIDs forKey:@"ImmortalForegroundBundleIDs"];
-                [[NSUserDefaults standardUserDefaults] synchronize];
-                [immortalizer updateAccessoryForBundle:frontMostApp.bundleIdentifier];
-                [self setSelected:YES];
-            }
+            BOOL wasImmortalized = [immortalizer isImmortalized:frontMostApp.bundleIdentifier];
+            [immortalizer setImmortalized:!wasImmortalized forBundle:frontMostApp.bundleIdentifier];
+            if (isToastEnabled)
+                [immortalizer showToastWithTitle:frontMostApp.displayName
+                                        subtitle:localizer(wasImmortalized ? @"AT_REST" : @"IMMORTALIZED")
+                                            icon:[UIImage systemImageNamed:(wasImmortalized ? @"arrow.uturn.left.circle.fill" : @"hourglass.bottomhalf.fill")]
+                                        autoHide:3.0];
+            [immortalizer updateAccessoryForBundle:frontMostApp.bundleIdentifier];
+            [self setSelected:!wasImmortalized];
         } else {
             dispatch_async(dispatch_get_main_queue(), ^{
                 UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Immortalizer"
@@ -134,81 +123,64 @@
 
 - (void)populateActions {
     Immortalizer *immortalizer = [objc_getClass("Immortalizer") sharedInstance];
-    NSMutableArray *immortalBundleIDs = [[[NSUserDefaults standardUserDefaults] arrayForKey:@"ImmortalForegroundBundleIDs"] mutableCopy];
-    if (!immortalBundleIDs) immortalBundleIDs = [NSMutableArray array];
     SBApplication *frontMostApp = [(SpringBoard *)UIApplication.sharedApplication _accessibilityFrontMostApplication];
+    NSString *frontMostBundleID = frontMostApp.bundleIdentifier;
     NSUserDefaults *prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
-    NSMutableArray *lockedBundleIDs = [[[NSUserDefaults standardUserDefaults] arrayForKey:@"LockedBundleIDs"] mutableCopy];
-    if (!lockedBundleIDs) lockedBundleIDs = [NSMutableArray array];
     __block BOOL isToastEnabled = [prefs objectForKey:@"isToastEnabled"] ? [prefs boolForKey:@"isToastEnabled"] : YES;
     __block BOOL immortalizerStatus = [prefs objectForKey:@"isEnabled"] ? [prefs boolForKey:@"isEnabled"] : YES;
-    __block BOOL isFrontAppImmortalized = [immortalBundleIDs containsObject:frontMostApp.bundleIdentifier];
-    __block BOOL isFrontAppLocked = [lockedBundleIDs containsObject:frontMostApp.bundleIdentifier];
-    __block BOOL isFrontAppNotifEnabled = [immortalizer isNotificationEnabledForBundleIdentifier:frontMostApp.bundleIdentifier];
+    BOOL isFrontAppImmortalized = [immortalizer isImmortalized:frontMostBundleID];
+    BOOL isFrontAppLocked = [immortalizer isLocked:frontMostBundleID];
+    BOOL isFrontAppNotifEnabled = [immortalizer isNotificationEnabledForBundleIdentifier:frontMostBundleID];
     __weak typeof(self) weakSelf = self;
 
     if (frontMostApp && immortalizerStatus) {
         [self addActionWithTitle:(isFrontAppImmortalized ? localizer(@"DISABLE_IMMORTAL_FOREGROUND") : localizer(@"ENABLE_IMMORTAL_FOREGROUND")) subtitle:[NSString stringWithFormat:(localizer(@"FOR_APPS")),  frontMostApp.displayName] glyph:[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] handler:^{
             dispatch_async(dispatch_get_main_queue(), ^{
-                if (isFrontAppImmortalized) {
-                    [immortalBundleIDs removeObject:frontMostApp.bundleIdentifier];
-                    if (isToastEnabled)
-                        [immortalizer showToastWithTitle:frontMostApp.displayName subtitle:localizer(@"AT_REST") icon:[UIImage systemImageNamed:@"arrow.uturn.left.circle.fill"] autoHide:3.0];
-                    [[NSUserDefaults standardUserDefaults] setObject:immortalBundleIDs forKey:@"ImmortalForegroundBundleIDs"];
-                    [[NSUserDefaults standardUserDefaults] synchronize];
-                    [immortalizer updateAccessoryForBundle:frontMostApp.bundleIdentifier]; 
-                    [weakSelf setSelected:NO];
-                } else {
-                    [immortalBundleIDs addObject:frontMostApp.bundleIdentifier];
-                    if (isToastEnabled)
-                        [immortalizer showToastWithTitle:frontMostApp.displayName subtitle:localizer(@"IMMORTALIZED") icon:[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] autoHide:3.0];
-                    [[NSUserDefaults standardUserDefaults] setObject:immortalBundleIDs forKey:@"ImmortalForegroundBundleIDs"];
-                    [[NSUserDefaults standardUserDefaults] synchronize];
-                    [immortalizer updateAccessoryForBundle:frontMostApp.bundleIdentifier];
-                    [weakSelf setSelected:YES];
-                }
+                // The state may have moved on since the menu was built.
+                BOOL wasImmortalized = [immortalizer isImmortalized:frontMostBundleID];
+                [immortalizer setImmortalized:!wasImmortalized forBundle:frontMostBundleID];
+                if (isToastEnabled)
+                    [immortalizer showToastWithTitle:frontMostApp.displayName
+                                            subtitle:localizer(wasImmortalized ? @"AT_REST" : @"IMMORTALIZED")
+                                                icon:[UIImage systemImageNamed:(wasImmortalized ? @"arrow.uturn.left.circle.fill" : @"hourglass.bottomhalf.fill")]
+                                            autoHide:3.0];
+                [immortalizer updateAccessoryForBundle:frontMostBundleID];
+                [weakSelf setSelected:!wasImmortalized];
             });
         }];
 
         [self addActionWithTitle:[NSString stringWithFormat:(isFrontAppLocked ? localizer(@"UNLOCK") : localizer(@"LOCK")), frontMostApp.displayName] subtitle:(isFrontAppLocked ? localizer(@"SWITCHER_CLOSE_FOOTER")  : localizer(@"SWITCHER_LOCK_FOOTER") ) glyph:[UIImage systemImageNamed:(isFrontAppLocked ? @"lock.open.fill" : @"lock.fill")] handler:^{
             dispatch_async(dispatch_get_main_queue(), ^{
-                if (isFrontAppLocked) {
-                    [lockedBundleIDs removeObject:frontMostApp.bundleIdentifier];
-                    if (isToastEnabled)
-                        [immortalizer showToastWithTitle:frontMostApp.displayName subtitle:localizer(@"RELEASED")  icon:[UIImage systemImageNamed:@"lock.open.fill"] autoHide:3.0];
-                    [[NSUserDefaults standardUserDefaults] setObject:lockedBundleIDs forKey:@"LockedBundleIDs"];
-                    [[NSUserDefaults standardUserDefaults] synchronize];
-                    [immortalizer updateAccessoryForBundle:frontMostApp.bundleIdentifier]; 
-                } else {
-                    [lockedBundleIDs addObject:frontMostApp.bundleIdentifier];
-                    if (isToastEnabled)
-                        [immortalizer showToastWithTitle:frontMostApp.displayName subtitle:localizer(@"JAILEDE")  icon:[UIImage systemImageNamed:@"lock.fill"] autoHide:3.0];
-                    [[NSUserDefaults standardUserDefaults] setObject:lockedBundleIDs forKey:@"LockedBundleIDs"];
-                    [[NSUserDefaults standardUserDefaults] synchronize];
-                    [immortalizer updateAccessoryForBundle:frontMostApp.bundleIdentifier]; 
-                }
+                BOOL wasLocked = [immortalizer isLocked:frontMostBundleID];
+                [immortalizer setLocked:!wasLocked forBundle:frontMostBundleID];
+                if (isToastEnabled)
+                    [immortalizer showToastWithTitle:frontMostApp.displayName
+                                            subtitle:localizer(wasLocked ? @"RELEASED" : @"JAILEDE")
+                                                icon:[UIImage systemImageNamed:(wasLocked ? @"lock.open.fill" : @"lock.fill")]
+                                            autoHide:3.0];
+                [immortalizer updateAccessoryForBundle:frontMostBundleID];
             });
         }];
-        
+
+
         [self addActionWithTitle:[NSString stringWithFormat:(isFrontAppNotifEnabled ? localizer(@"DISABLE_NOTIFICATION") : localizer(@"ENABLE_NOTIFICATION")), frontMostApp.displayName] subtitle:(isFrontAppNotifEnabled ? localizer(@"DISABLE_NOTIFICATION_FOOTER") : localizer(@"ENABLE_NOTIFICATION_FOOTER")) glyph:[UIImage systemImageNamed:(isFrontAppNotifEnabled ? @"bell.slash.fill" : @"bell.fill")] handler:^{
             dispatch_async(dispatch_get_main_queue(), ^{
                 NSMutableArray *enabledAppNotifsList = [[immortalizer getNotificationEnabledApps] mutableCopy];
                 if (!enabledAppNotifsList) enabledAppNotifsList = [NSMutableArray array];
-                if (isFrontAppNotifEnabled) {
-                    [enabledAppNotifsList removeObject:frontMostApp.bundleIdentifier];
-                    if (isToastEnabled)
-                        [immortalizer showToastWithTitle:frontMostApp.displayName subtitle:localizer(@"DISABLE") icon:[UIImage systemImageNamed:@"bell.slash.fill"] autoHide:3.0];
-                    [prefs setObject:enabledAppNotifsList forKey:@"selectedApplications"];
-                    [prefs synchronize];
-                        notify_post("com.sergy.immortalizer.preferenceschanged.notifs");
-                } else {
-                    [enabledAppNotifsList addObject:frontMostApp.bundleIdentifier];
-                    if (isToastEnabled)
-                        [immortalizer showToastWithTitle:frontMostApp.displayName subtitle:localizer(@"ENABLE") icon:[UIImage systemImageNamed:@"bell.fill"] autoHide:3.0];
-                    [prefs setObject:enabledAppNotifsList forKey:@"selectedApplications"];
-                    [prefs synchronize];
-                    notify_post("com.sergy.immortalizer.preferenceschanged.notifs");
-                }
+                BOOL wasNotifEnabled = [enabledAppNotifsList containsObject:frontMostBundleID];
+
+                if (wasNotifEnabled) [enabledAppNotifsList removeObject:frontMostBundleID];
+                else [enabledAppNotifsList addObject:frontMostBundleID];
+
+                if (isToastEnabled)
+                    [immortalizer showToastWithTitle:frontMostApp.displayName
+                                            subtitle:localizer(wasNotifEnabled ? @"DISABLE" : @"ENABLE")
+                                                icon:[UIImage systemImageNamed:(wasNotifEnabled ? @"bell.slash.fill" : @"bell.fill")]
+                                            autoHide:3.0];
+
+                [prefs setObject:enabledAppNotifsList forKey:@"selectedApplications"];
+                [prefs synchronize];
+                notify_post("com.sergy.immortalizer.preferenceschanged.notifs");
             });
         }];   
     }

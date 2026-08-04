@@ -1,4 +1,4 @@
-    /* 
+    /*
         Copyright (C) 2024  Serge Alagon
 
         This program is free software: you can redistribute it and/or modify
@@ -12,15 +12,24 @@
         GNU General Public License for more details.
 
         You should have received a copy of the GNU General Public License
-        along with this program.  If not, see <https://www.gnu.org/licenses/>. 
+        along with this program.  If not, see <https://www.gnu.org/licenses/>.
     */
-    
+
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 #import "Headers.h"
 #import "Immortalizer.h"
 #import "CustomToastView.h"
+
+static NSString *const ImmortalBundlesKey = @"ImmortalForegroundBundleIDs";
+static NSString *const LockedBundlesKey = @"LockedBundleIDs";
+
+@interface Immortalizer ()
+// Swapped wholesale rather than mutated, so readers never see a half-updated set.
+@property (atomic, copy) NSSet *cachedImmortalBundles;
+@property (atomic, copy) NSSet *cachedLockedBundles;
+@end
 
 @implementation Immortalizer
 + (instancetype)sharedInstance {
@@ -32,8 +41,20 @@
     return sharedInstance;
 }
 
+static NSSet *storedBundles(NSString *key) {
+    NSMutableSet *bundles = [NSMutableSet set];
+    for (id bundleIdentifier in [[NSUserDefaults standardUserDefaults] arrayForKey:key]) {
+        if ([bundleIdentifier isKindOfClass:[NSString class]]) [bundles addObject:bundleIdentifier];
+    }
+    return bundles;
+}
+
 -(instancetype)init {
     self = [super init];
+    if (self) {
+        _cachedImmortalBundles = storedBundles(ImmortalBundlesKey);
+        _cachedLockedBundles = storedBundles(LockedBundlesKey);
+    }
     return self;
 }
 
@@ -61,5 +82,48 @@
 -(BOOL)isNotificationEnabledForBundleIdentifier:(NSString *)bundleIdentifier {
     NSArray *selectedApps = [self getNotificationEnabledApps];
     return [selectedApps containsObject:bundleIdentifier];
+}
+
+-(void)storeBundles:(NSSet *)bundles forKey:(NSString *)key {
+    [[NSUserDefaults standardUserDefaults] setObject:bundles.allObjects forKey:key];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+}
+
+-(BOOL)isImmortalized:(NSString *)bundleIdentifier {
+    return bundleIdentifier && [self.cachedImmortalBundles containsObject:bundleIdentifier];
+}
+
+-(void)setImmortalized:(BOOL)immortalized forBundle:(NSString *)bundleIdentifier {
+    if (!bundleIdentifier) return;
+    NSMutableSet *bundles = [self.cachedImmortalBundles mutableCopy];
+    if (immortalized) [bundles addObject:bundleIdentifier];
+    else [bundles removeObject:bundleIdentifier];
+    self.cachedImmortalBundles = bundles;
+    [self storeBundles:bundles forKey:ImmortalBundlesKey];
+}
+
+-(BOOL)hasImmortalizedApps {
+    return self.cachedImmortalBundles.count > 0;
+}
+
+-(NSArray *)immortalizedBundles {
+    return self.cachedImmortalBundles.allObjects;
+}
+
+-(BOOL)isLocked:(NSString *)bundleIdentifier {
+    return bundleIdentifier && [self.cachedLockedBundles containsObject:bundleIdentifier];
+}
+
+-(void)setLocked:(BOOL)locked forBundle:(NSString *)bundleIdentifier {
+    if (!bundleIdentifier) return;
+    NSMutableSet *bundles = [self.cachedLockedBundles mutableCopy];
+    if (locked) [bundles addObject:bundleIdentifier];
+    else [bundles removeObject:bundleIdentifier];
+    self.cachedLockedBundles = bundles;
+    [self storeBundles:bundles forKey:LockedBundlesKey];
+}
+
+-(NSArray *)lockedBundles {
+    return self.cachedLockedBundles.allObjects;
 }
 @end

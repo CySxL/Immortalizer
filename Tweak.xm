@@ -29,6 +29,24 @@ static BOOL isIndicatorEnabled;
 static BOOL isToastEnabled;
 static BOOL isLockIndicatorEnabled;
 
+static NSData *shortcutIconData(void) {
+    static NSData *data = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        data = UIImagePNGRepresentation([UIImage systemImageNamed:@"hourglass.bottomhalf.fill"]);
+    });
+    return data;
+}
+
+static Ivar rolesToLayoutItemsIvar(void) {
+    static Ivar ivar = NULL;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        ivar = class_getInstanceVariable(objc_getClass("SBAppLayout"), "_rolesToLayoutItemsMap");
+    });
+    return ivar;
+}
+
 %group init
 
 %hook SpringBoard
@@ -42,42 +60,38 @@ static BOOL isLockIndicatorEnabled;
 -(long long)currentLabelAccessoryType {
     long long accessory = %orig;
     if (immortalizerEnabled && isIndicatorEnabled) {
+        Immortalizer *immortalizer = [Immortalizer sharedInstance];
         BOOL isDocked = [self.location containsString:@"Dock"];
-        
-        if (isDocked) {
-            NSArray *immortalBundleIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:@"ImmortalForegroundBundleIDs"];
-            if ([immortalBundleIDs containsObject:[self.icon applicationBundleID]]) {
-                SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:[self.icon applicationBundleID]];
-                accessory = app.processState ? 4 : 2;
-            }
+
+        if (isDocked && [immortalizer isImmortalized:[self.icon applicationBundleID]]) {
+            SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:[self.icon applicationBundleID]];
+            accessory = app.processState ? 4 : 2;
         }
-        
-        if ([self.icon isKindOfClass:[%c(SBFolderIcon) class]]) {
+
+        if (!isFolderTransitioning && [self.icon isKindOfClass:[%c(SBFolderIcon) class]]) {
             SBFolder *folder = [(SBFolderIcon *)self.icon folder];
-            NSArray *folderIcons = [folder icons];
-            NSArray *immortalBundleIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:@"ImmortalForegroundBundleIDs"];
-            
-            for (SBIcon *icon in folderIcons) {
-                if ([immortalBundleIDs containsObject:[icon applicationBundleID]] && !isFolderTransitioning) {
+
+            for (SBIcon *icon in [folder icons]) {
+                if ([immortalizer isImmortalized:[icon applicationBundleID]]) {
                     SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:[icon applicationBundleID]];
                     accessory = app.processState ? 4 : 2;
+                    break;
                 }
             }
         }
     }
-    return accessory; 
+    return accessory;
 }
 
--(NSArray *)applicationShortcutItems { 
+-(NSArray *)applicationShortcutItems {
     NSArray *orig = %orig;
     if (immortalizerEnabled) {
         NSString *bundleID = [self.icon applicationBundleID];
-        
+
         if (!bundleID) return orig;
-        
-        NSArray *immortalBundleIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:@"ImmortalForegroundBundleIDs"];
-        BOOL isImmortal = [immortalBundleIDs containsObject:bundleID];
-        
+
+        BOOL isImmortal = [[Immortalizer sharedInstance] isImmortalized:bundleID];
+
         SBSApplicationShortcutItem* immortalItem = [[%c(SBSApplicationShortcutItem) alloc] init];
         if (isImmortal) {
             immortalItem.localizedTitle = localizer(@"DISABLE_IMMORTAL_FOREGROUND");
@@ -85,23 +99,21 @@ static BOOL isLockIndicatorEnabled;
             immortalItem.localizedTitle = localizer(@"ENABLE_IMMORTAL_FOREGROUND");
         }
         immortalItem.type = @"com.sergy.immortalizer.immortalForeground.item";
-        UIImage *iconImage = [UIImage systemImageNamed:@"hourglass.bottomhalf.fill"];
-        immortalItem.icon = [[%c(SBSApplicationShortcutCustomImageIcon) alloc] initWithImageData:UIImagePNGRepresentation(iconImage) dataType:0 isTemplate:1];
-        
+        immortalItem.icon = [[%c(SBSApplicationShortcutCustomImageIcon) alloc] initWithImageData:shortcutIconData() dataType:0 isTemplate:1];
+
         immortalItem.bundleIdentifierToLaunch = bundleID;
-            
+
         return [orig arrayByAddingObject:immortalItem];
-    } else 
+    } else
         return orig;
 }
 
 +(void)activateShortcut:(SBSApplicationShortcutItem*)item withBundleIdentifier:(NSString*)bundleID forIconView:(id)iconView {
     if (immortalizerEnabled && [[item type] isEqualToString:@"com.sergy.immortalizer.immortalForeground.item"]) {
         Immortalizer *immortalizer = [Immortalizer sharedInstance];
-        NSMutableArray *immortalBundleIDs = [[[NSUserDefaults standardUserDefaults] arrayForKey:@"ImmortalForegroundBundleIDs"] mutableCopy];
-        if (!immortalBundleIDs) immortalBundleIDs = [NSMutableArray array];
-   
-        if ([bundleID isEqualToString:@"com.apple.camera"] && ![immortalBundleIDs containsObject:bundleID]) {
+        BOOL isImmortal = [immortalizer isImmortalized:bundleID];
+
+        if ([bundleID isEqualToString:@"com.apple.camera"] && !isImmortal) {
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ 
                 UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Immortalizer"
                                                                                         message:localizer(@"CREEP_ALERT")
@@ -125,19 +137,15 @@ static BOOL isLockIndicatorEnabled;
             });
         }
 
-        if ([immortalBundleIDs containsObject:bundleID]) {
+        if (isImmortal) {
 			SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:bundleID];
 			if (app.processState != nil) [[%c(FBSSystemService) sharedService] openApplication:bundleID options:nil withResult:nil];
             if (isToastEnabled) [immortalizer showToastWithTitle:[immortalizer getAppNameForBundle:bundleID] subtitle:localizer(@"AT_REST") icon:[UIImage systemImageNamed:@"arrow.uturn.left.circle.fill"] autoHide:3.0];
-            [immortalBundleIDs removeObject:bundleID];
-			
-        } else { 
+        } else {
             if (isToastEnabled) [immortalizer showToastWithTitle:[immortalizer getAppNameForBundle:bundleID] subtitle:localizer(@"IMMORTALIZED") icon:[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] autoHide:3.0];
 			[[%c(FBSSystemService) sharedService] openApplication:bundleID options:nil withResult:nil];
-            [immortalBundleIDs addObject:bundleID];
         }
-        	[[NSUserDefaults standardUserDefaults] setObject:immortalBundleIDs forKey:@"ImmortalForegroundBundleIDs"];
-        	[[NSUserDefaults standardUserDefaults] synchronize];
+            [immortalizer setImmortalized:!isImmortal forBundle:bundleID];
             [immortalizer updateAccessoryForBundle:bundleID];
     } else {
         %orig;
@@ -147,18 +155,17 @@ static BOOL isLockIndicatorEnabled;
 
 %hook FBScene
 -(void)updateSettings:(id)arg1 withTransitionContext:(id)arg2 completion:(id)arg3{
-    FBProcess *process = self.clientProcess;   
+    FBProcess *process = self.clientProcess;
     if (immortalizerEnabled && process) {
         NSString *bundleIdentifier = process.bundleIdentifier;
-        NSArray *immortalBundleIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:@"ImmortalForegroundBundleIDs"]; 
-          
-        if ([immortalBundleIDs containsObject:bundleIdentifier] && arg2 == nil) { 
-            Immortalizer *immortalizer = [Immortalizer sharedInstance];
+        Immortalizer *immortalizer = [Immortalizer sharedInstance];
+
+        if (arg2 == nil && [immortalizer isImmortalized:bundleIdentifier]) {
             [immortalizer updateAccessoryForBundle:bundleIdentifier];
             return;
-        } 
+        }
     }
-    %orig; 
+    %orig;
 }
 %end
 
@@ -166,8 +173,7 @@ static BOOL isLockIndicatorEnabled;
 -(long long)labelAccessoryTypeForIcon:(id)arg1 {
     long long accessory = %orig;
     if (immortalizerEnabled && isIndicatorEnabled) {
-        NSArray *immortalBundleIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:@"ImmortalForegroundBundleIDs"];
-        if ([immortalBundleIDs containsObject:self.bundleIdentifier]) {
+        if ([[Immortalizer sharedInstance] isImmortalized:self.bundleIdentifier]) {
             SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:self.bundleIdentifier];
             accessory = app.processState ? 4 : 2;
         }
@@ -177,13 +183,11 @@ static BOOL isLockIndicatorEnabled;
 
 -(NSString *)displayName {
     NSString *originalName = %orig;
-    NSString *bundleID = self.bundleIdentifier;
-    NSArray *lockedBundleIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:@"LockedBundleIDs"]; 
 
-    NSString *status = @"";
-    if (immortalizerEnabled && lockedBundleIDs && [lockedBundleIDs containsObject:bundleID] && isLockIndicatorEnabled) status = @"🔒";
-    
-    return [NSString stringWithFormat:@"%@%@", originalName, status];
+    if (immortalizerEnabled && isLockIndicatorEnabled && [[Immortalizer sharedInstance] isLocked:self.bundleIdentifier])
+        return [originalName stringByAppendingString:@"🔒"];
+
+    return originalName;
 }
 
 -(void)_didExitWithContext:(id)arg1 {
@@ -191,9 +195,7 @@ static BOOL isLockIndicatorEnabled;
     if (immortalizerEnabled) {
         Immortalizer *immortalizer = [Immortalizer sharedInstance];
         [immortalizer updateAccessoryForBundle:self.bundleIdentifier];
-        NSArray *immortalBundleIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:@"ImmortalForegroundBundleIDs"];
-        BOOL isImmortalized = [immortalBundleIDs containsObject:self.bundleIdentifier];
-        if (isImmortalized && isToastEnabled) {
+        if ([immortalizer isImmortalized:self.bundleIdentifier] && isToastEnabled) {
             [immortalizer showToastWithTitle:[immortalizer getAppNameForBundle:self.bundleIdentifier] subtitle:localizer(@"TERMINATED") icon:[UIImage systemImageNamed:@"exclamationmark.triangle.fill"] autoHide:3.0];
         }
     }
@@ -244,26 +246,24 @@ static BOOL isLockIndicatorEnabled;
     if (immortalizerEnabled) {
         SBAppLayout *appLayout = [self appLayout];
         NSDictionary *bundles = nil;
-        NSArray *lockedBundleIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:@"LockedBundleIDs"]; 
+        Immortalizer *immortalizer = [Immortalizer sharedInstance];
 
         if (@available(iOS 16.0, *)) bundles = [appLayout itemsToLayoutAttributesMap];
-        else bundles = (NSDictionary *)object_getIvar(appLayout, class_getInstanceVariable([%c(SBAppLayout) class], "_rolesToLayoutItemsMap"));
+        else bundles = (NSDictionary *)object_getIvar(appLayout, rolesToLayoutItemsIvar());
 
         if (bundles) {
             if (@available(iOS 16.0, *)) {
                 for (SBDisplayItem *displayItem in bundles) {
-                    NSString *bundleIdentifier = [displayItem bundleIdentifier];
-                    if ([lockedBundleIDs containsObject:bundleIdentifier]) shouldTerminate = false;
+                    if ([immortalizer isLocked:[displayItem bundleIdentifier]]) {
+                        shouldTerminate = false;
+                        break;
+                    }
                 }
-            } 
+            }
             else {
                 SBDisplayItem *displayItem = bundles[@1];
-                NSString *bundleIdentifier = nil;
-                if ([displayItem respondsToSelector:@selector(bundleIdentifier)])
-                    bundleIdentifier = [displayItem bundleIdentifier];
-                if (bundleIdentifier && [lockedBundleIDs containsObject:bundleIdentifier]) {
+                if ([displayItem respondsToSelector:@selector(bundleIdentifier)] && [immortalizer isLocked:[displayItem bundleIdentifier]])
                     shouldTerminate = false;
-                }
             }
         }
     }
@@ -276,27 +276,24 @@ static BOOL isLockIndicatorEnabled;
 
 static void prefsLockIndicatorChanged() {
     Immortalizer *immortalizer = [Immortalizer sharedInstance];
-    NSArray *lockedBundleIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:@"LockedBundleIDs"]; 
     NSUserDefaults *const prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
     isLockIndicatorEnabled = [prefs objectForKey:@"isLockIndicatorEnabled"] ? [prefs boolForKey:@"isLockIndicatorEnabled"] : YES;
-    for (NSString *bundleIdentifier in lockedBundleIDs)
+    for (NSString *bundleIdentifier in [immortalizer lockedBundles])
         [immortalizer updateAccessoryForBundle:bundleIdentifier];
 }
 
 static void immortalizerPreferencesChanged() {
     Immortalizer *immortalizer = [Immortalizer sharedInstance];
-    NSArray *immortalBundleIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:@"ImmortalForegroundBundleIDs"];
     NSUserDefaults *const prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
     immortalizerEnabled = [prefs objectForKey:@"isEnabled"] ? [prefs boolForKey:@"isEnabled"] : YES;
-        for (NSString *bundleIdentifier in immortalBundleIDs) 
+        for (NSString *bundleIdentifier in [immortalizer immortalizedBundles])
             [immortalizer updateAccessoryForBundle:bundleIdentifier];
     notify_post("com.sergy.immortalizer.updatecc");
 }
 
 static void prefsNotifsChanged() {
     Immortalizer *immortalizer = [Immortalizer sharedInstance];
-    NSArray *immortalBundleIDs = [[NSUserDefaults standardUserDefaults] arrayForKey:@"ImmortalForegroundBundleIDs"];
-    for (NSString * immortalApp in immortalBundleIDs) {
+    for (NSString * immortalApp in [immortalizer immortalizedBundles]) {
         if ([immortalizer isNotificationEnabledForBundleIdentifier:immortalApp]) {
             [[%c(UNSUserNotificationServer) sharedInstance] _didChangeApplicationState:4 forBundleIdentifier:immortalApp];
         } else {
