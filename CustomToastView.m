@@ -72,6 +72,10 @@
 -(instancetype)initWithTitle:(NSString *)title subtitle:(NSString *)subtitle icon:(UIImage *)icon autoHide:(int)seconds {
     self = [super initWithFrame:CGRectZero];
     if (self) {
+        // The toast sits under the status bar, and safe area insets would
+        // otherwise inflate the stack margins and push the row down.
+        self.insetsLayoutMarginsFromSafeArea = NO;
+
         self.containerView = [[UIView alloc] init];
         self.containerView.backgroundColor = [UIColor colorWithRed:0.125 green:0.125 blue:0.125 alpha:1.0];
         self.containerView.layer.cornerRadius = 25;
@@ -87,6 +91,7 @@
         self.hStack.axis = UILayoutConstraintAxisHorizontal;
         self.hStack.alignment = UIStackViewAlignmentCenter;
         self.hStack.spacing = 2.0;
+        self.hStack.insetsLayoutMarginsFromSafeArea = NO;
         self.hStack.translatesAutoresizingMaskIntoConstraints = NO;
         [self.containerView addSubview:self.hStack];
 
@@ -109,6 +114,7 @@
         self.vStack.axis = UILayoutConstraintAxisVertical;
         self.vStack.alignment = UIStackViewAlignmentCenter;
         self.vStack.spacing = 2.0;
+        self.vStack.insetsLayoutMarginsFromSafeArea = NO;
         self.vStack.translatesAutoresizingMaskIntoConstraints = NO;
         [self.hStack addArrangedSubview:self.vStack];
 
@@ -177,10 +183,11 @@
 
     // Off the short side, so the toast is the same size in both orientations.
     CGFloat shortSide = MIN(container.bounds.size.width, container.bounds.size.height);
+    BOOL landscape = container.bounds.size.width > container.bounds.size.height;
 
     [NSLayoutConstraint activateConstraints:@[
         [self.centerXAnchor constraintEqualToAnchor:container.centerXAnchor],
-        [self.topAnchor constraintEqualToAnchor:container.topAnchor constant:40],
+        [self.topAnchor constraintEqualToAnchor:container.topAnchor constant:(landscape ? 8 : 40)],
         [self.widthAnchor constraintEqualToConstant:MAX(shortSide - 190, 180)],
         [self.heightAnchor constraintEqualToConstant:70]
     ]];
