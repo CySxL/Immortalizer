@@ -22,6 +22,9 @@
 -(UIWindow *)getKeyWindow {
     NSArray *windows = [UIApplication sharedApplication].windows;
     for (UIWindow *window in [windows reverseObjectEnumerator]) {
+        if (window.isKeyWindow) return window;
+    }
+    for (UIWindow *window in [windows reverseObjectEnumerator]) {
         if (window.hidden == NO && window.alpha > 0) return window;
     }
     return nil;
@@ -103,9 +106,7 @@
             [self.hStack.bottomAnchor constraintEqualToAnchor:self.containerView.bottomAnchor]
         ]];
 
-        if (seconds > 0) {
-            [self hideAfter:seconds];
-        }
+        self.autoHideDelay = seconds;
     }
     return self;
 }
@@ -125,28 +126,22 @@
     
     self.translatesAutoresizingMaskIntoConstraints = NO;
     
-    NSMutableArray *constraints = [NSMutableArray array];
-    [constraints addObjectsFromArray:@[
+    [NSLayoutConstraint activateConstraints:@[
         [self.centerXAnchor constraintEqualToAnchor:keyWindow.centerXAnchor],
         [self.topAnchor constraintEqualToAnchor:keyWindow.topAnchor constant:40],
-        [self.widthAnchor constraintEqualToConstant:keyWindow.bounds.size.width - 190],
+        [self.widthAnchor constraintEqualToConstant:MAX(keyWindow.bounds.size.width - 190, 180)],
         [self.heightAnchor constraintEqualToConstant:70]
     ]];
-    
-    [NSLayoutConstraint activateConstraints:constraints];
-    
+
     [keyWindow layoutIfNeeded];
-    
+
     self.transform = CGAffineTransformMakeTranslation(0, -self.bounds.size.height);
-    
+
     [UIView animateWithDuration:0.3 animations:^{
         self.transform = CGAffineTransformIdentity;
-    } completion:^(BOOL finished) {
-    }];
-}
+    } completion:nil];
 
--(void)removeFromSuperview {
-    [super removeFromSuperview];
+    if (self.autoHideDelay > 0) [self hideAfter:self.autoHideDelay];
 }
 
 -(void)hideWithAnimation {
@@ -158,9 +153,10 @@
 }
 
 -(void)hideAfter:(NSTimeInterval)time {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(time * NSEC_PER_SEC)), 
+    __weak typeof(self) weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(time * NSEC_PER_SEC)),
         dispatch_get_main_queue(), ^{
-        [self hideWithAnimation];
+        [weakSelf hideWithAnimation];
     });
 }
 @end

@@ -29,6 +29,7 @@
 
 @interface CustomToastView ()
 @property (nonatomic, strong) UIView *containerView;
-@property (nonatomic, strong) UIStackView *hStack; 
-@property (nonatomic, strong) UIStackView *vStack; 
+@property (nonatomic, strong) UIStackView *hStack;
+@property (nonatomic, strong) UIStackView *vStack;
+@property (nonatomic, assign) NSTimeInterval autoHideDelay;
 @end
