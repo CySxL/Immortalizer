@@ -33,5 +33,4 @@ CGFloat CCUIDefaultExpandedContentModuleWidth(void);
 
 
 @interface ImmortalizerCCUIMenuModuleViewController : CCUIMenuModuleViewController
-@property (nonatomic, weak) ImmortalizerCC* module;
 @end

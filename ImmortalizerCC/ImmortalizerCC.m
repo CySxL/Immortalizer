@@ -26,7 +26,6 @@
 -(instancetype)init{
 	if ((self = [super init])) {
 		_contentViewController = [[ImmortalizerCCUIMenuModuleViewController alloc] init];
-        _contentViewController.module = self;
 	}
 	return self;
 }

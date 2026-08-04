@@ -44,18 +44,13 @@
     if (_observing) notify_cancel(_updateToken);
 }
 
-- (void)setSelectedState:(BOOL)selected {
-    [self setSelected:selected];
-    [self.module setSelected:selected];
-}
-
 - (void)refreshSelectedState {
     SBApplication *frontMostApp = [(SpringBoard *)UIApplication.sharedApplication _accessibilityFrontMostApplication];
     NSUserDefaults *const prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
     BOOL immortalizerStatus = [prefs objectForKey:@"isEnabled"] ? [prefs boolForKey:@"isEnabled"] : YES;
     Immortalizer *immortalizer = [objc_getClass("Immortalizer") sharedInstance];
 
-    [self setSelectedState:(immortalizerStatus && [immortalizer isImmortalized:frontMostApp.bundleIdentifier])];
+    [self setSelected:(immortalizerStatus && [immortalizer isImmortalized:frontMostApp.bundleIdentifier])];
 }
 
 - (void)viewWillAppear:(BOOL)animated{
@@ -81,7 +76,7 @@
                                             icon:[UIImage systemImageNamed:(wasImmortalized ? @"arrow.uturn.left.circle.fill" : @"hourglass.bottomhalf.fill")]
                                         autoHide:3.0];
             [immortalizer updateAccessoryForBundle:frontMostApp.bundleIdentifier];
-            [self setSelectedState:!wasImmortalized];
+            [self setSelected:!wasImmortalized];
         } else {
             [immortalizer showAlertWithMessage:localizer(@"IMMORTALIZER_CC_TOGGLE_FOOTER") buttonTitle:localizer(@"OOOPS")];
         }
@@ -118,7 +113,7 @@
                                                 icon:[UIImage systemImageNamed:(wasImmortalized ? @"arrow.uturn.left.circle.fill" : @"hourglass.bottomhalf.fill")]
                                             autoHide:3.0];
                 [immortalizer updateAccessoryForBundle:frontMostBundleID];
-                [weakSelf setSelectedState:!wasImmortalized];
+                [weakSelf setSelected:!wasImmortalized];
             });
         }];
 
