@@ -232,7 +232,8 @@ static Ivar rolesToLayoutItemsIvar(void) {
 
 %hook UIMutableApplicationSceneSettings
 -(void)setDeactivationReasons:(unsigned long long)arg1 {
-    if (arg1 != 0)
+    // The settings object carries no scene identity, so this cannot be per app.
+    if (arg1 != 0 && immortalizerEnabled && [[Immortalizer sharedInstance] hasImmortalizedApps])
         return;
     %orig;
 }
