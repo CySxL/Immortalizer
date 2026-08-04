@@ -28,8 +28,8 @@
 - Added an option to have a lock indicator on both SpringBoard and app switcher
 ### v2.4
 - The state indicator now distinguishes a running app from a stopped one instead of always showing the same accessory
-- The CC tile now reflects the toggle state
-- Toast auto-hide starts when the toast is shown, and it no longer attaches itself to whichever window happens to be on top
+- The toast lives in its own window, so closing an app from the switcher no longer makes it vanish mid-animation
+- Toast auto-hide starts when the toast is shown rather than when it is built
 - Alerts are no longer dropped when something else is already presenting
 ### v2.3
 - Added roothide support
