@@ -33,7 +33,7 @@
 
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:30 weight:UIImageSymbolWeightRegular];
         self.glyphImage = [[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] imageByApplyingSymbolConfiguration:config];
-        self.selectedGlyphImage = [[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] imageByApplyingSymbolConfiguration:config];
+        self.selectedGlyphImage = [[UIImage systemImageNamed:@"hourglass.tophalf.fill"] imageByApplyingSymbolConfiguration:config];
         self.selectedGlyphColor = [UIColor blueColor];
         self.title = @"Immortalizer";
     }
