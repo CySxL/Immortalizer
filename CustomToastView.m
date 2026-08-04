@@ -32,22 +32,22 @@
     return fallback;
 }
 
+static UIWindow *toastWindow = nil;
+
 +(UIWindow *)toastWindow {
     UIWindowScene *scene = [self activeWindowScene];
     if (!scene) return nil;
 
-    static UIWindow *window = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        window = [[UIWindow alloc] initWithWindowScene:scene];
-        window.windowLevel = UIWindowLevelAlert + 1000;
-        window.backgroundColor = [UIColor clearColor];
-        window.userInteractionEnabled = NO;
-        window.rootViewController = [[UIViewController alloc] init];
-    });
+    if (!toastWindow) {
+        toastWindow = [[UIWindow alloc] initWithWindowScene:scene];
+        toastWindow.windowLevel = UIWindowLevelAlert + 1000;
+        toastWindow.backgroundColor = [UIColor clearColor];
+        toastWindow.userInteractionEnabled = NO;
+        toastWindow.rootViewController = [[UIViewController alloc] init];
+    }
 
-    window.windowScene = scene;
-    return window;
+    toastWindow.windowScene = scene;
+    return toastWindow;
 }
 
 +(UIWindow *)borrowedWindow {
@@ -62,11 +62,10 @@
 }
 
 +(void)hideWindowIfEmpty {
-    UIWindow *window = [self toastWindow];
-    for (UIView *subview in window.rootViewController.view.subviews) {
+    for (UIView *subview in toastWindow.rootViewController.view.subviews) {
         if ([subview isKindOfClass:[CustomToastView class]]) return;
     }
-    window.hidden = YES;
+    toastWindow.hidden = YES;
 }
 
 -(instancetype)initWithTitle:(NSString *)title subtitle:(NSString *)subtitle icon:(UIImage *)icon autoHide:(int)seconds {
