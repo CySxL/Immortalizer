@@ -73,6 +73,30 @@ static NSSet *storedBundles(NSString *key) {
     [toast presentToast];
 }
 
+-(void)showAlertWithMessage:(NSString *)message buttonTitle:(NSString *)buttonTitle {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIWindow *keyWindow = nil;
+        for (UIWindow *window in UIApplication.sharedApplication.windows) {
+            if (window.isKeyWindow) {
+                keyWindow = window;
+                break;
+            }
+        }
+        if (!keyWindow) keyWindow = UIApplication.sharedApplication.windows.firstObject;
+
+        // Presenting on a controller that is already presenting does nothing.
+        UIViewController *presenter = keyWindow.rootViewController;
+        while (presenter.presentedViewController) presenter = presenter.presentedViewController;
+        if (!presenter) return;
+
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Immortalizer"
+                                                                      message:message
+                                                               preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:buttonTitle style:UIAlertActionStyleDefault handler:nil]];
+        [presenter presentViewController:alert animated:YES completion:nil];
+    });
+}
+
 -(NSArray *)getNotificationEnabledApps {
     NSUserDefaults *prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
     NSArray *selectedApps = [prefs objectForKey:@"selectedApplications"];

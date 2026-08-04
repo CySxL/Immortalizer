@@ -153,26 +153,8 @@ static void runSceneCompletionLater(id completion) {
         BOOL isImmortal = [immortalizer isImmortalized:bundleID];
 
         if ([bundleID isEqualToString:@"com.apple.camera"] && !isImmortal) {
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ 
-                UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Immortalizer"
-                                                                                        message:localizer(@"CREEP_ALERT")
-                                                                                preferredStyle:UIAlertControllerStyleAlert];
-
-                [alertController addAction:[UIAlertAction actionWithTitle:localizer(@"LMAO")
-                                                                    style:UIAlertActionStyleDefault
-                                                                handler:^(UIAlertAction * _Nonnull action) {
-                }]];
-                
-                    UIWindow *keyWindow = nil;
-                    for (UIWindow *window in UIApplication.sharedApplication.windows) {
-                        if (window.isKeyWindow) {
-                            keyWindow = window;
-                            break;
-                        }
-                    }
-                    if (!keyWindow) keyWindow = UIApplication.sharedApplication.windows.firstObject;
-                    UIViewController *rootViewController = keyWindow.rootViewController;
-                    [rootViewController presentViewController:alertController animated:YES completion:nil];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [immortalizer showAlertWithMessage:localizer(@"CREEP_ALERT") buttonTitle:localizer(@"LMAO")];
             });
         }
 

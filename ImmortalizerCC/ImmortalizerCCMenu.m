@@ -78,50 +78,10 @@
             [immortalizer updateAccessoryForBundle:frontMostApp.bundleIdentifier];
             [self setSelected:!wasImmortalized];
         } else {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Immortalizer"
-                                                                                        message:localizer(@"IMMORTALIZER_CC_TOGGLE_FOOTER")
-                                                                                preferredStyle:UIAlertControllerStyleAlert];
-
-                [alertController addAction:[UIAlertAction actionWithTitle:localizer(@"OOOPS")
-                                                                    style:UIAlertActionStyleDefault
-                                                                handler:^(UIAlertAction * _Nonnull action) {
-                }]];
-                
-                    UIWindow *keyWindow = nil;
-                    for (UIWindow *window in UIApplication.sharedApplication.windows) {
-                        if (window.isKeyWindow) {
-                            keyWindow = window;
-                            break;
-                        }
-                    }
-                    if (!keyWindow) keyWindow = UIApplication.sharedApplication.windows.firstObject;
-                    UIViewController *rootViewController = keyWindow.rootViewController;
-                    [rootViewController presentViewController:alertController animated:YES completion:nil];
-            });
+            [immortalizer showAlertWithMessage:localizer(@"IMMORTALIZER_CC_TOGGLE_FOOTER") buttonTitle:localizer(@"OOOPS")];
         }
     } else {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"Immortalizer"
-                                                                                        message:localizer(@"IMMORTALIZER_CC_ON_FOOTER")
-                                                                                preferredStyle:UIAlertControllerStyleAlert];
-
-                [alertController addAction:[UIAlertAction actionWithTitle:localizer(@"OKAY")
-                                                                    style:UIAlertActionStyleDefault
-                                                                handler:^(UIAlertAction * _Nonnull action) {
-                }]];
-                
-                    UIWindow *keyWindow = nil;
-                    for (UIWindow *window in UIApplication.sharedApplication.windows) {
-                        if (window.isKeyWindow) {
-                            keyWindow = window;
-                            break;
-                        }
-                    }
-                    if (!keyWindow) keyWindow = UIApplication.sharedApplication.windows.firstObject;
-                    UIViewController *rootViewController = keyWindow.rootViewController;
-                    [rootViewController presentViewController:alertController animated:YES completion:nil];
-            });
+        [immortalizer showAlertWithMessage:localizer(@"IMMORTALIZER_CC_ON_FOOTER") buttonTitle:localizer(@"OKAY")];
     }
 }
 
