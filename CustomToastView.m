@@ -173,10 +173,13 @@
 
     self.translatesAutoresizingMaskIntoConstraints = NO;
 
+    // Off the short side, so the toast is the same size in both orientations.
+    CGFloat shortSide = MIN(window.bounds.size.width, window.bounds.size.height);
+
     [NSLayoutConstraint activateConstraints:@[
         [self.centerXAnchor constraintEqualToAnchor:window.centerXAnchor],
         [self.topAnchor constraintEqualToAnchor:window.topAnchor constant:40],
-        [self.widthAnchor constraintEqualToConstant:MAX(window.bounds.size.width - 190, 180)],
+        [self.widthAnchor constraintEqualToConstant:MAX(shortSide - 190, 180)],
         [self.heightAnchor constraintEqualToConstant:70]
     ]];
 
