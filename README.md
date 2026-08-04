@@ -26,6 +26,11 @@
 - Added CC Support for quick actions
 - Added an option to lock an app in app switcher
 - Added an option to have a lock indicator on both SpringBoard and app switcher
+### v2.4
+- The state indicator now distinguishes a running app from a stopped one instead of always showing the same accessory
+- The CC tile now reflects the toggle state
+- Toast auto-hide starts when the toast is shown, and it no longer attaches itself to whichever window happens to be on top
+- Alerts are no longer dropped when something else is already presenting
 ### v2.3
 - Added roothide support
 - Scene deactivation is no longer blocked system-wide when the tweak is disabled or nothing is immortalized
