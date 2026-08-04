@@ -256,7 +256,7 @@ static Ivar rolesToLayoutItemsIvar(void) {
         Immortalizer *immortalizer = [Immortalizer sharedInstance];
 
         if (@available(iOS 16.0, *)) bundles = [appLayout itemsToLayoutAttributesMap];
-        else bundles = (NSDictionary *)object_getIvar(appLayout, rolesToLayoutItemsIvar());
+        else if (rolesToLayoutItemsIvar()) bundles = (NSDictionary *)object_getIvar(appLayout, rolesToLayoutItemsIvar());
 
         if (bundles) {
             if (@available(iOS 16.0, *)) {
