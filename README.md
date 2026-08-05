@@ -41,7 +41,7 @@
 - Toast auto-hide starts when the toast is shown rather than when it is built
 - Alerts are no longer dropped when something else is already presenting
 ### v2.5
-- Fixed an app launched straight into a window by another tweak being killed a second later
+- Fixed an app launched straight into a Myrtle window being killed a second later
 - The toast is centred correctly in landscape and its contents sit on the midline
 - The CC tile glyph now flips when the app is immortalized
 ### v2.5.2

@@ -50,8 +50,8 @@ static long long accessoryTypeForBundle(NSString *bundleIdentifier) {
 }
 
 // A scene has to be configured once before it means anything to keep it in the
-// foreground, and swallowing that first update is what kills an app launched
-// straight into a window.
+// foreground, and swallowing that first update is what kills an app Myrtle
+// launches straight into a window.
 static BOOL sceneWasConfigured(id scene) {
     static NSHashTable *scenes = nil;
     static dispatch_once_t onceToken;
