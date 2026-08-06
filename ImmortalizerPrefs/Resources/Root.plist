@@ -164,6 +164,16 @@
 			<key>icon</key>
 			<string>twitter.png</string>
 		</dict>
+		<dict>
+			<key>action</key>
+			<string>maintainerPage</string>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>ROOTHIDE_PORT</string>
+			<key>icon</key>
+			<string>github.png</string>
+		</dict>
 
 		<dict>
 			<key>cell</key>

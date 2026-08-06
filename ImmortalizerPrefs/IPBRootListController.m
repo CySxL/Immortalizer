@@ -44,6 +44,10 @@
     [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://x.com/@srgndrlgn"] withCompletionHandler:nil];
 }
 
+-(void)maintainerPage {
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://github.com/CySxL"] withCompletionHandler:nil];
+}
+
 - (void)localizeSpecifiers:(NSArray *)specifiers {
     for (PSSpecifier *specifier in specifiers) {
         NSString *labelKey = specifier.properties[@"label"];
