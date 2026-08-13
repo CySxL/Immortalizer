@@ -48,6 +48,8 @@
 - Toast sits higher in landscape and its contents are centred on the midline in both orientations
 ### v2.5.4
 - The state indicator no longer hangs under the cluster that closes an App Library pod
+### v2.5.5
+- Class lookups off the accessory path, and the switcher lock skips an item that carries no bundle identifier
 
 ## Building
 
