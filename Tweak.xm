@@ -106,17 +106,20 @@ static Ivar rolesToLayoutItemsIvar(void) {
     long long accessory = %orig;
     if (immortalizerEnabled && isIndicatorEnabled) {
         Immortalizer *immortalizer = [Immortalizer sharedInstance];
+        SBIcon *icon = self.icon;
+        NSString *bundleID = [icon applicationBundleID];
         BOOL isDocked = [self.location containsString:@"Dock"];
 
-        if (isDocked && [immortalizer isImmortalized:[self.icon applicationBundleID]])
-            accessory = accessoryTypeForBundle([self.icon applicationBundleID]);
+        if (isDocked && [immortalizer isImmortalized:bundleID])
+            accessory = accessoryTypeForBundle(bundleID);
 
-        if (!isFolderTransitioning && [self.icon isKindOfClass:[%c(SBFolderIcon) class]]) {
-            SBFolder *folder = [(SBFolderIcon *)self.icon folder];
+        if (!isFolderTransitioning && [icon isKindOfClass:[%c(SBFolderIcon) class]]) {
+            SBFolder *folder = [(SBFolderIcon *)icon folder];
 
-            for (SBIcon *icon in [folder icons]) {
-                if ([immortalizer isImmortalized:[icon applicationBundleID]]) {
-                    accessory = accessoryTypeForBundle([icon applicationBundleID]);
+            for (SBIcon *folderedIcon in [folder icons]) {
+                NSString *folderedBundleID = [folderedIcon applicationBundleID];
+                if ([immortalizer isImmortalized:folderedBundleID]) {
+                    accessory = accessoryTypeForBundle(folderedBundleID);
                     break;
                 }
             }
