@@ -18,6 +18,14 @@
 #import "ImmortalizerCCMenu.h"
 #import "Localizer.h"
 
+// The class comes from the tweak's dylib, so it is cached only once it turns up
+// rather than on the first call.
+static Immortalizer *sharedImmortalizer(void) {
+    static Class immortalizerClass = Nil;
+    if (!immortalizerClass) immortalizerClass = objc_getClass("Immortalizer");
+    return [immortalizerClass sharedInstance];
+}
+
 @implementation ImmortalizerCCUIMenuModuleViewController {
     int _updateToken;
     BOOL _observing;
@@ -48,7 +56,7 @@
     SBApplication *frontMostApp = [(SpringBoard *)UIApplication.sharedApplication _accessibilityFrontMostApplication];
     NSUserDefaults *const prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
     BOOL immortalizerStatus = [prefs objectForKey:@"isEnabled"] ? [prefs boolForKey:@"isEnabled"] : YES;
-    Immortalizer *immortalizer = [objc_getClass("Immortalizer") sharedInstance];
+    Immortalizer *immortalizer = sharedImmortalizer();
 
     [self setSelected:(immortalizerStatus && [immortalizer isImmortalized:frontMostApp.bundleIdentifier])];
 }
@@ -61,7 +69,7 @@
 	return CCUIDefaultExpandedContentModuleWidth();
 }
 - (void)buttonTapped:(id)arg1 forEvent:(UIEvent *)event{ 
-    Immortalizer *immortalizer = [objc_getClass("Immortalizer") sharedInstance];
+    Immortalizer *immortalizer = sharedImmortalizer();
     SBApplication *frontMostApp = [(SpringBoard *)UIApplication.sharedApplication _accessibilityFrontMostApplication];
     NSUserDefaults *const prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
     BOOL immortalizerStatus = [prefs objectForKey:@"isEnabled"] ? [prefs boolForKey:@"isEnabled"] : YES;
@@ -90,7 +98,7 @@
 }
 
 - (void)populateActions {
-    Immortalizer *immortalizer = [objc_getClass("Immortalizer") sharedInstance];
+    Immortalizer *immortalizer = sharedImmortalizer();
     SBApplication *frontMostApp = [(SpringBoard *)UIApplication.sharedApplication _accessibilityFrontMostApplication];
     NSString *frontMostBundleID = frontMostApp.bundleIdentifier;
     NSUserDefaults *prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];

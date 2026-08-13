@@ -41,6 +41,15 @@ static NSString *const LockedBundlesKey = @"LockedBundleIDs";
     return sharedInstance;
 }
 
+// objc_getClass locks the runtime class table, and this sits under every
+// accessory refresh. Cached only once the class turns up, so an early call
+// cannot pin nil.
+static SBIconModel *iconModel(void) {
+    static Class controllerClass = Nil;
+    if (!controllerClass) controllerClass = objc_getClass("SBIconController");
+    return ((SBIconController *)[controllerClass sharedInstance]).model;
+}
+
 static NSSet *storedBundles(NSString *key) {
     NSMutableSet *bundles = [NSMutableSet set];
     for (id bundleIdentifier in [[NSUserDefaults standardUserDefaults] arrayForKey:key]) {
@@ -59,12 +68,12 @@ static NSSet *storedBundles(NSString *key) {
 }
 
 -(NSString *)getAppNameForBundle:(NSString *)bundle {
-    return [[((SBIconController *)[objc_getClass("SBIconController") sharedInstance]).model applicationIconForBundleIdentifier:bundle] displayName];
+    return [[iconModel() applicationIconForBundleIdentifier:bundle] displayName];
 }
 
 -(void)updateAccessoryForBundle:(NSString *)bundle {
     dispatch_async(dispatch_get_main_queue(), ^{
-        [[((SBIconController *)[objc_getClass("SBIconController") sharedInstance]).model applicationIconForBundleIdentifier:bundle] _notifyAccessoriesDidUpdate];
+        [[iconModel() applicationIconForBundleIdentifier:bundle] _notifyAccessoriesDidUpdate];
     });
 }
 

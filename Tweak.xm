@@ -42,7 +42,7 @@ static NSData *shortcutIconData(void) {
 // processState is a non-nil object whenever the application object exists, so it
 // only says whether the app is running once you look at the pid.
 static long long accessoryTypeForBundle(NSString *bundleIdentifier) {
-    SBApplication *app = [[objc_getClass("SBApplicationController") sharedInstance] applicationWithBundleIdentifier:bundleIdentifier];
+    SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:bundleIdentifier];
     SBApplicationProcessState *state = app.processState;
 
     if (!state) return 2;
