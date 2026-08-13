@@ -46,6 +46,8 @@
 - The CC tile glyph now flips when the app is immortalized
 ### v2.5.2
 - Toast sits higher in landscape and its contents are centred on the midline in both orientations
+### v2.5.4
+- The state indicator no longer hangs under the cluster that closes an App Library pod
 
 ## Building
 
