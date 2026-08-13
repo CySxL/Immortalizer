@@ -41,13 +41,17 @@ static NSData *shortcutIconData(void) {
 
 // processState is a non-nil object whenever the application object exists, so it
 // only says whether the app is running once you look at the pid.
-static long long accessoryTypeForBundle(NSString *bundleIdentifier) {
+static BOOL isBundleRunning(NSString *bundleIdentifier) {
     SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:bundleIdentifier];
     SBApplicationProcessState *state = app.processState;
 
-    if (!state) return 2;
-    if (![state respondsToSelector:@selector(pid)]) return 4;
-    return state.pid > 0 ? 4 : 2;
+    if (!state) return NO;
+    if (![state respondsToSelector:@selector(pid)]) return YES;
+    return state.pid > 0;
+}
+
+static long long accessoryTypeForBundle(NSString *bundleIdentifier) {
+    return isBundleRunning(bundleIdentifier) ? 4 : 2;
 }
 
 // A scene has to be configured once before it means anything to keep it in the
@@ -165,8 +169,10 @@ static Ivar rolesToLayoutItemsIvar(void) {
         }
 
         if (isImmortal) {
-			SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:bundleID];
-			if (app.processState != nil) [[%c(FBSSystemService) sharedService] openApplication:bundleID options:nil withResult:nil];
+			// Reopening hands the scene back to the system. An app that is not
+			// running has no scene to hand back, and launching it here is not
+			// what turning the option off asks for.
+			if (isBundleRunning(bundleID)) [[%c(FBSSystemService) sharedService] openApplication:bundleID options:nil withResult:nil];
             if (isToastEnabled) [immortalizer showToastWithTitle:[immortalizer getAppNameForBundle:bundleID] subtitle:localizer(@"AT_REST") icon:[UIImage systemImageNamed:@"arrow.uturn.left.circle.fill"] autoHide:3.0];
         } else {
             if (isToastEnabled) [immortalizer showToastWithTitle:[immortalizer getAppNameForBundle:bundleID] subtitle:localizer(@"IMMORTALIZED") icon:[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] autoHide:3.0];
