@@ -281,6 +281,7 @@ static Ivar rolesToLayoutItemsIvar(void) {
         if (bundles) {
             if (@available(iOS 16.0, *)) {
                 for (SBDisplayItem *displayItem in bundles) {
+                    if (![displayItem respondsToSelector:@selector(bundleIdentifier)]) continue;
                     if ([immortalizer isLocked:[displayItem bundleIdentifier]]) {
                         shouldTerminate = false;
                         break;
