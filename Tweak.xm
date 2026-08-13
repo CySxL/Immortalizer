@@ -28,6 +28,7 @@ static BOOL isFolderTransitioning = false;
 static BOOL isIndicatorEnabled;
 static BOOL isToastEnabled;
 static BOOL isLockIndicatorEnabled;
+static BOOL isIndicatorSuppressed;
 
 static NSData *shortcutIconData(void) {
     static NSData *data = nil;
@@ -66,6 +67,10 @@ static BOOL sceneWasConfigured(id scene) {
     }
 }
 
+static BOOL isAppLibraryLocation(NSString *location) {
+    return [location hasPrefix:@"SBIconLocationAppLibrary"];
+}
+
 static Ivar rolesToLayoutItemsIvar(void) {
     static Ivar ivar = NULL;
     static dispatch_once_t onceToken;
@@ -86,6 +91,18 @@ static Ivar rolesToLayoutItemsIvar(void) {
 
 %hook SBIconView
 -(long long)currentLabelAccessoryType {
+    // The cluster that closes an App Library pod is a folder of the apps the pod
+    // had no room for, and it carries no label for an accessory to sit under.
+    // SpringBoard folds a folder's contents into its own accessory, so the app
+    // hook has to stand down for the whole lookup or the cluster picks the
+    // indicator back up. App icons in the library keep theirs.
+    if (immortalizerEnabled && isIndicatorEnabled && isAppLibraryLocation(self.location) && ![self.icon applicationBundleID]) {
+        isIndicatorSuppressed = YES;
+        long long accessory = %orig;
+        isIndicatorSuppressed = NO;
+        return accessory;
+    }
+
     long long accessory = %orig;
     if (immortalizerEnabled && isIndicatorEnabled) {
         Immortalizer *immortalizer = [Immortalizer sharedInstance];
@@ -180,7 +197,7 @@ static Ivar rolesToLayoutItemsIvar(void) {
 %hook SBApplication
 -(long long)labelAccessoryTypeForIcon:(id)arg1 {
     long long accessory = %orig;
-    if (immortalizerEnabled && isIndicatorEnabled) {
+    if (immortalizerEnabled && isIndicatorEnabled && !isIndicatorSuppressed) {
         if ([[Immortalizer sharedInstance] isImmortalized:self.bundleIdentifier])
             accessory = accessoryTypeForBundle(self.bundleIdentifier);
     }
