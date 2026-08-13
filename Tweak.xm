@@ -333,8 +333,11 @@ static void prefsNotifsChanged() {
 }
 
 static void prefsIndicatorChanged() {
+    Immortalizer *immortalizer = [Immortalizer sharedInstance];
     NSUserDefaults *const indicatorPrefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
     isIndicatorEnabled = [indicatorPrefs objectForKey:@"isIndicatorEnabled"] ? [indicatorPrefs boolForKey:@"isIndicatorEnabled"] : YES;
+    for (NSString *bundleIdentifier in [immortalizer immortalizedBundles])
+        [immortalizer updateAccessoryForBundle:bundleIdentifier];
 }
 
 static void prefsToastChanged() {
