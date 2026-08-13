@@ -50,6 +50,10 @@
 - The state indicator no longer hangs under the cluster that closes an App Library pod
 ### v2.5.5
 - Class lookups off the accessory path, and the switcher lock skips an item that carries no bundle identifier
+### v2.5.6
+- Turning the state indicator off clears the indicators already on screen
+- Turning the lock indicator off, or the tweak itself, redraws the icon names it had marked
+- Disabling immortal foreground on an app that is not running no longer launches it
 
 ## Building
 
