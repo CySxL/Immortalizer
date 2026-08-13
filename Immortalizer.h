@@ -19,6 +19,7 @@
 + (instancetype)sharedInstance;
 - (NSString *)getAppNameForBundle:(NSString *)bundle;
 - (void)updateAccessoryForBundle:(NSString *)bundle;
+- (void)updateLabelForBundle:(NSString *)bundle;
 - (void)showToastWithTitle:(NSString *)title subtitle:(NSString *)subtitle icon:(UIImage *)icon autoHide:(int)autoHide;
 - (void)showAlertWithMessage:(NSString *)message buttonTitle:(NSString *)buttonTitle;
 - (NSArray *)getNotificationEnabledApps;

@@ -44,10 +44,14 @@ static NSString *const LockedBundlesKey = @"LockedBundleIDs";
 // objc_getClass locks the runtime class table, and this sits under every
 // accessory refresh. Cached only once the class turns up, so an early call
 // cannot pin nil.
-static SBIconModel *iconModel(void) {
+static SBIconController *iconController(void) {
     static Class controllerClass = Nil;
     if (!controllerClass) controllerClass = objc_getClass("SBIconController");
-    return ((SBIconController *)[controllerClass sharedInstance]).model;
+    return (SBIconController *)[controllerClass sharedInstance];
+}
+
+static SBIconModel *iconModel(void) {
+    return iconController().model;
 }
 
 static NSSet *storedBundles(NSString *key) {
@@ -74,6 +78,23 @@ static NSSet *storedBundles(NSString *key) {
 -(void)updateAccessoryForBundle:(NSString *)bundle {
     dispatch_async(dispatch_get_main_queue(), ^{
         [[iconModel() applicationIconForBundleIdentifier:bundle] _notifyAccessoriesDidUpdate];
+    });
+}
+
+// An icon announces an accessory change but not a name change, so the label is
+// rebuilt through the view that draws it. A firmware that moved either selector
+// leaves the label as it was until the next respring.
+-(void)updateLabelForBundle:(NSString *)bundle {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        SBIcon *icon = [iconModel() applicationIconForBundleIdentifier:bundle];
+        SBIconController *controller = iconController();
+        if (!icon || ![controller respondsToSelector:@selector(homescreenIconViewMap)]) return;
+
+        SBIconViewMap *map = controller.homescreenIconViewMap;
+        if (![map respondsToSelector:@selector(mappedIconViewForIcon:)]) return;
+
+        SBIconView *iconView = [map mappedIconViewForIcon:icon];
+        if ([iconView respondsToSelector:@selector(_updateLabel)]) [iconView _updateLabel];
     });
 }
 

@@ -50,8 +50,14 @@
 -(id)applicationIconForBundleIdentifier:(id)arg1 ;
 @end
 
+@class SBIconViewMap;
 @interface SBIconController : NSObject
 @property (nonatomic,retain) SBIconModel * model;
+@property (nonatomic,readonly) SBIconViewMap * homescreenIconViewMap;
+@end
+
+@interface SBIconViewMap : NSObject
+-(id)mappedIconViewForIcon:(SBIcon *)arg1;
 @end
 
 @class SBFolder, SBFolderIcon;
@@ -76,6 +82,7 @@
 - (NSString*)applicationBundleIdentifier; //only on 14
 - (NSString*)applicationBundleIdentifierForShortcuts;
 -(void)_updateLabelAccessoryView;
+-(void)_updateLabel;
 @property (nonatomic,readonly) CGRect frame; 
 @end
 

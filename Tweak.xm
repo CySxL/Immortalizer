@@ -307,7 +307,7 @@ static void prefsLockIndicatorChanged() {
     NSUserDefaults *const prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
     isLockIndicatorEnabled = [prefs objectForKey:@"isLockIndicatorEnabled"] ? [prefs boolForKey:@"isLockIndicatorEnabled"] : YES;
     for (NSString *bundleIdentifier in [immortalizer lockedBundles])
-        [immortalizer updateAccessoryForBundle:bundleIdentifier];
+        [immortalizer updateLabelForBundle:bundleIdentifier];
 }
 
 static void immortalizerPreferencesChanged() {
@@ -316,6 +316,8 @@ static void immortalizerPreferencesChanged() {
     immortalizerEnabled = [prefs objectForKey:@"isEnabled"] ? [prefs boolForKey:@"isEnabled"] : YES;
         for (NSString *bundleIdentifier in [immortalizer immortalizedBundles])
             [immortalizer updateAccessoryForBundle:bundleIdentifier];
+        for (NSString *bundleIdentifier in [immortalizer lockedBundles])
+            [immortalizer updateLabelForBundle:bundleIdentifier];
     notify_post("com.sergy.immortalizer.updatecc");
 }
 
