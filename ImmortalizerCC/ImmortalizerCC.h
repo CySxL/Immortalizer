@@ -20,7 +20,6 @@
 #import "CCUIMenuModuleViewController.h"
 
 @interface ImmortalizerCC : CCUIToggleModule
-@property (nonatomic, assign) BOOL expandOnTap;
 @end
 
 
