@@ -29,6 +29,7 @@ static BOOL isIndicatorEnabled;
 static BOOL isToastEnabled;
 static BOOL isLockIndicatorEnabled;
 static BOOL isIndicatorSuppressed;
+static NSString *sceneUpdateBundleIdentifier;
 
 static NSData *shortcutIconData(void) {
     static NSData *data = nil;
@@ -199,7 +200,13 @@ static Ivar rolesToLayoutItemsIvar(void) {
             return;
         }
     }
+
+    // The settings object the deactivation lands on carries no scene identity,
+    // so the app it belongs to is recorded for the length of the update.
+    NSString *previous = sceneUpdateBundleIdentifier;
+    sceneUpdateBundleIdentifier = process.bundleIdentifier;
     %orig;
+    sceneUpdateBundleIdentifier = previous;
 }
 %end
 
@@ -267,8 +274,9 @@ static Ivar rolesToLayoutItemsIvar(void) {
 
 %hook UIMutableApplicationSceneSettings
 -(void)setDeactivationReasons:(unsigned long long)arg1 {
-    // The settings object carries no scene identity, so this cannot be per app.
-    if (arg1 != 0 && immortalizerEnabled && [[Immortalizer sharedInstance] hasImmortalizedApps])
+    // Only the app whose scene is being updated is held, so immortalizing one
+    // app no longer keeps every other one in the foreground.
+    if (arg1 != 0 && immortalizerEnabled && [[Immortalizer sharedInstance] isImmortalized:sceneUpdateBundleIdentifier])
         return;
     %orig;
 }
