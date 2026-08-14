@@ -56,6 +56,8 @@
 - Disabling immortal foreground on an app that is not running no longer launches it
 ### v2.6.4
 - The lock mark no longer shows up in the Control Center menu or in the toasts
+### v2.7
+- The immortalized and locked lists live in the tweak's own preferences instead of SpringBoard's, and move across on first launch
 
 ## Building
 
