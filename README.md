@@ -54,6 +54,8 @@
 - Turning the state indicator off clears the indicators already on screen
 - Turning the lock indicator off, or the tweak itself, redraws the icon names it had marked
 - Disabling immortal foreground on an app that is not running no longer launches it
+### v2.6.4
+- The lock mark no longer shows up in the Control Center menu or in the toasts
 
 ## Building
 
