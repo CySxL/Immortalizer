@@ -32,7 +32,6 @@ extern NSString *const ImmortalizerLockMark;
 // Only written from inside SpringBoard, so the in-process copy is authoritative.
 - (BOOL)isImmortalized:(NSString *)bundleIdentifier;
 - (void)setImmortalized:(BOOL)immortalized forBundle:(NSString *)bundleIdentifier;
-- (BOOL)hasImmortalizedApps;
 - (NSArray *)immortalizedBundles;
 - (BOOL)isLocked:(NSString *)bundleIdentifier;
 - (void)setLocked:(BOOL)locked forBundle:(NSString *)bundleIdentifier;

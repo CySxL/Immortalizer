@@ -184,10 +184,6 @@ static NSSet *storedBundles(NSString *key) {
     [self storeBundles:bundles forKey:ImmortalBundlesKey];
 }
 
--(BOOL)hasImmortalizedApps {
-    return self.cachedImmortalBundles.count > 0;
-}
-
 -(NSArray *)immortalizedBundles {
     return self.cachedImmortalBundles.allObjects;
 }
