@@ -58,6 +58,8 @@
 - The lock mark no longer shows up in the Control Center menu or in the toasts
 ### v2.7
 - The immortalized and locked lists live in the tweak's own preferences instead of SpringBoard's, and move across on first launch
+### v2.8
+- Only an immortalized app's own scene is held in the foreground, instead of every app's once one was immortalized
 
 ## Building
 
