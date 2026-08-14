@@ -22,6 +22,8 @@
 #import "Immortalizer.h"
 #import "CustomToastView.h"
 
+NSString *const ImmortalizerLockMark = @"🔒";
+
 static NSString *const ImmortalBundlesKey = @"ImmortalForegroundBundleIDs";
 static NSString *const LockedBundlesKey = @"LockedBundleIDs";
 
@@ -72,7 +74,11 @@ static NSSet *storedBundles(NSString *key) {
 }
 
 -(NSString *)getAppNameForBundle:(NSString *)bundle {
-    return [[iconModel() applicationIconForBundleIdentifier:bundle] displayName];
+    if (!bundle) return nil;
+    NSString *name = [[iconModel() applicationIconForBundleIdentifier:bundle] displayName];
+    if ([name hasSuffix:ImmortalizerLockMark])
+        name = [name substringToIndex:name.length - ImmortalizerLockMark.length];
+    return name;
 }
 
 -(void)updateAccessoryForBundle:(NSString *)bundle {

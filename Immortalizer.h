@@ -15,6 +15,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+// Appended to an app's display name while it is locked. Anything of ours that
+// shows a name asks for it through -getAppNameForBundle:, which takes it back off.
+extern NSString *const ImmortalizerLockMark;
+
 @interface Immortalizer : NSObject
 + (instancetype)sharedInstance;
 - (NSString *)getAppNameForBundle:(NSString *)bundle;

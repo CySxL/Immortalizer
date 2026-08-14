@@ -76,10 +76,11 @@ static Immortalizer *sharedImmortalizer(void) {
     BOOL isToastEnabled = [prefs objectForKey:@"isToastEnabled"] ? [prefs boolForKey:@"isToastEnabled"] : YES;
     if (immortalizerStatus) {
         if (frontMostApp) {
+            NSString *appName = [immortalizer getAppNameForBundle:frontMostApp.bundleIdentifier] ?: frontMostApp.displayName;
             BOOL wasImmortalized = [immortalizer isImmortalized:frontMostApp.bundleIdentifier];
             [immortalizer setImmortalized:!wasImmortalized forBundle:frontMostApp.bundleIdentifier];
             if (isToastEnabled)
-                [immortalizer showToastWithTitle:frontMostApp.displayName
+                [immortalizer showToastWithTitle:appName
                                         subtitle:localizer(wasImmortalized ? @"AT_REST" : @"IMMORTALIZED")
                                             icon:[UIImage systemImageNamed:(wasImmortalized ? @"arrow.uturn.left.circle.fill" : @"hourglass.bottomhalf.fill")]
                                         autoHide:3.0];
@@ -101,6 +102,7 @@ static Immortalizer *sharedImmortalizer(void) {
     Immortalizer *immortalizer = sharedImmortalizer();
     SBApplication *frontMostApp = [(SpringBoard *)UIApplication.sharedApplication _accessibilityFrontMostApplication];
     NSString *frontMostBundleID = frontMostApp.bundleIdentifier;
+    NSString *appName = frontMostBundleID ? ([immortalizer getAppNameForBundle:frontMostBundleID] ?: frontMostApp.displayName) : nil;
     NSUserDefaults *prefs = [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
     __block BOOL isToastEnabled = [prefs objectForKey:@"isToastEnabled"] ? [prefs boolForKey:@"isToastEnabled"] : YES;
     __block BOOL immortalizerStatus = [prefs objectForKey:@"isEnabled"] ? [prefs boolForKey:@"isEnabled"] : YES;
@@ -110,13 +112,13 @@ static Immortalizer *sharedImmortalizer(void) {
     __weak typeof(self) weakSelf = self;
 
     if (frontMostApp && immortalizerStatus) {
-        [self addActionWithTitle:(isFrontAppImmortalized ? localizer(@"DISABLE_IMMORTAL_FOREGROUND") : localizer(@"ENABLE_IMMORTAL_FOREGROUND")) subtitle:[NSString stringWithFormat:(localizer(@"FOR_APPS")),  frontMostApp.displayName] glyph:[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] handler:^{
+        [self addActionWithTitle:(isFrontAppImmortalized ? localizer(@"DISABLE_IMMORTAL_FOREGROUND") : localizer(@"ENABLE_IMMORTAL_FOREGROUND")) subtitle:[NSString stringWithFormat:(localizer(@"FOR_APPS")),  appName] glyph:[UIImage systemImageNamed:@"hourglass.bottomhalf.fill"] handler:^{
             dispatch_async(dispatch_get_main_queue(), ^{
                 // The state may have moved on since the menu was built.
                 BOOL wasImmortalized = [immortalizer isImmortalized:frontMostBundleID];
                 [immortalizer setImmortalized:!wasImmortalized forBundle:frontMostBundleID];
                 if (isToastEnabled)
-                    [immortalizer showToastWithTitle:frontMostApp.displayName
+                    [immortalizer showToastWithTitle:appName
                                             subtitle:localizer(wasImmortalized ? @"AT_REST" : @"IMMORTALIZED")
                                                 icon:[UIImage systemImageNamed:(wasImmortalized ? @"arrow.uturn.left.circle.fill" : @"hourglass.bottomhalf.fill")]
                                             autoHide:3.0];
@@ -125,12 +127,12 @@ static Immortalizer *sharedImmortalizer(void) {
             });
         }];
 
-        [self addActionWithTitle:[NSString stringWithFormat:(isFrontAppLocked ? localizer(@"UNLOCK") : localizer(@"LOCK")), frontMostApp.displayName] subtitle:(isFrontAppLocked ? localizer(@"SWITCHER_CLOSE_FOOTER")  : localizer(@"SWITCHER_LOCK_FOOTER") ) glyph:[UIImage systemImageNamed:(isFrontAppLocked ? @"lock.open.fill" : @"lock.fill")] handler:^{
+        [self addActionWithTitle:[NSString stringWithFormat:(isFrontAppLocked ? localizer(@"UNLOCK") : localizer(@"LOCK")), appName] subtitle:(isFrontAppLocked ? localizer(@"SWITCHER_CLOSE_FOOTER")  : localizer(@"SWITCHER_LOCK_FOOTER") ) glyph:[UIImage systemImageNamed:(isFrontAppLocked ? @"lock.open.fill" : @"lock.fill")] handler:^{
             dispatch_async(dispatch_get_main_queue(), ^{
                 BOOL wasLocked = [immortalizer isLocked:frontMostBundleID];
                 [immortalizer setLocked:!wasLocked forBundle:frontMostBundleID];
                 if (isToastEnabled)
-                    [immortalizer showToastWithTitle:frontMostApp.displayName
+                    [immortalizer showToastWithTitle:appName
                                             subtitle:localizer(wasLocked ? @"RELEASED" : @"JAILEDE")
                                                 icon:[UIImage systemImageNamed:(wasLocked ? @"lock.open.fill" : @"lock.fill")]
                                             autoHide:3.0];
@@ -139,7 +141,7 @@ static Immortalizer *sharedImmortalizer(void) {
         }];
 
 
-        [self addActionWithTitle:[NSString stringWithFormat:(isFrontAppNotifEnabled ? localizer(@"DISABLE_NOTIFICATION") : localizer(@"ENABLE_NOTIFICATION")), frontMostApp.displayName] subtitle:(isFrontAppNotifEnabled ? localizer(@"DISABLE_NOTIFICATION_FOOTER") : localizer(@"ENABLE_NOTIFICATION_FOOTER")) glyph:[UIImage systemImageNamed:(isFrontAppNotifEnabled ? @"bell.slash.fill" : @"bell.fill")] handler:^{
+        [self addActionWithTitle:[NSString stringWithFormat:(isFrontAppNotifEnabled ? localizer(@"DISABLE_NOTIFICATION") : localizer(@"ENABLE_NOTIFICATION")), appName] subtitle:(isFrontAppNotifEnabled ? localizer(@"DISABLE_NOTIFICATION_FOOTER") : localizer(@"ENABLE_NOTIFICATION_FOOTER")) glyph:[UIImage systemImageNamed:(isFrontAppNotifEnabled ? @"bell.slash.fill" : @"bell.fill")] handler:^{
             dispatch_async(dispatch_get_main_queue(), ^{
                 NSMutableArray *enabledAppNotifsList = [[immortalizer getNotificationEnabledApps] mutableCopy];
                 if (!enabledAppNotifsList) enabledAppNotifsList = [NSMutableArray array];
@@ -149,7 +151,7 @@ static Immortalizer *sharedImmortalizer(void) {
                 else [enabledAppNotifsList addObject:frontMostBundleID];
 
                 if (isToastEnabled)
-                    [immortalizer showToastWithTitle:frontMostApp.displayName
+                    [immortalizer showToastWithTitle:appName
                                             subtitle:localizer(wasNotifEnabled ? @"DISABLE" : @"ENABLE")
                                                 icon:[UIImage systemImageNamed:(wasNotifEnabled ? @"bell.slash.fill" : @"bell.fill")]
                                             autoHide:3.0];

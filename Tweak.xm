@@ -213,11 +213,14 @@ static Ivar rolesToLayoutItemsIvar(void) {
     return accessory;
 }
 
+// The mark rides on the app's name so the switcher shows it too. Anything of
+// ours that displays a name goes through -getAppNameForBundle:, which takes it
+// back off.
 -(NSString *)displayName {
     NSString *originalName = %orig;
 
     if (immortalizerEnabled && isLockIndicatorEnabled && [[Immortalizer sharedInstance] isLocked:self.bundleIdentifier])
-        return [originalName stringByAppendingString:@"🔒"];
+        return [originalName stringByAppendingString:ImmortalizerLockMark];
 
     return originalName;
 }
