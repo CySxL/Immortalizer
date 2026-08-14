@@ -56,12 +56,33 @@ static SBIconModel *iconModel(void) {
     return iconController().model;
 }
 
-static NSSet *storedBundles(NSString *key) {
+static NSUserDefaults *immortalizerDefaults(void) {
+    return [[NSUserDefaults alloc] initWithSuiteName:@"com.sergy.immortalizer.prefs"];
+}
+
+static NSSet *bundleSetFromArray(NSArray *stored) {
     NSMutableSet *bundles = [NSMutableSet set];
-    for (id bundleIdentifier in [[NSUserDefaults standardUserDefaults] arrayForKey:key]) {
+    for (id bundleIdentifier in stored) {
         if ([bundleIdentifier isKindOfClass:[NSString class]]) [bundles addObject:bundleIdentifier];
     }
     return bundles;
+}
+
+// Both lists used to live in SpringBoard's own domain, where removing the tweak
+// leaves them behind. Moved across on the first read and taken out of the old
+// one, so a downgrade starts from an empty list rather than a stale one.
+static NSSet *storedBundles(NSString *key) {
+    NSUserDefaults *prefs = immortalizerDefaults();
+    NSArray *stored = [prefs arrayForKey:key];
+    if (stored) return bundleSetFromArray(stored);
+
+    NSUserDefaults *legacy = [NSUserDefaults standardUserDefaults];
+    NSArray *inherited = [legacy arrayForKey:key];
+    if (!inherited) return [NSSet set];
+
+    [prefs setObject:inherited forKey:key];
+    [legacy removeObjectForKey:key];
+    return bundleSetFromArray(inherited);
 }
 
 -(instancetype)init {
@@ -145,8 +166,9 @@ static NSSet *storedBundles(NSString *key) {
 }
 
 -(void)storeBundles:(NSSet *)bundles forKey:(NSString *)key {
-    [[NSUserDefaults standardUserDefaults] setObject:bundles.allObjects forKey:key];
-    [[NSUserDefaults standardUserDefaults] synchronize];
+    NSUserDefaults *prefs = immortalizerDefaults();
+    [prefs setObject:bundles.allObjects forKey:key];
+    [prefs synchronize];
 }
 
 -(BOOL)isImmortalized:(NSString *)bundleIdentifier {
