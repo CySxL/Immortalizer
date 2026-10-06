@@ -60,6 +60,9 @@
 - The immortalized and locked lists live in the tweak's own preferences instead of SpringBoard's, and move across on first launch
 ### v2.8
 - Only an immortalized app's own scene is held in the foreground, instead of every app's once one was immortalized
+### v2.8.1
+- Scene deactivation is blocked for every app again while the tweak is enabled, as in 2.0.0-1, so pulling down Notification Center or Control Center no longer pauses apps that are not immortalized
+- Fixed an app freezing when it was immortalized from Control Center while already paused by it
 
 ## Building
 
