@@ -2,4 +2,5 @@
 packages/
 .DS_Store
 .vscode/
-note.md
+note.md*
+note-archive/
