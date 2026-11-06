@@ -162,6 +162,122 @@ static CGFloat IPBNameBaselineOffset(CGFloat scale) {
 
 @end
 
+static const CGFloat kIPBAvatarSide = 38.0;
+
+// The row indents its text by the width of its image, so a symbol takes the same square as the avatar.
+static UIImage *IPBSymbol(NSString *name, CGFloat side) {
+    UIImageSymbolConfiguration *configuration = [UIImageSymbolConfiguration configurationWithPointSize:20.0 weight:UIImageSymbolWeightMedium];
+    UIImage *symbol = [UIImage systemImageNamed:name withConfiguration:configuration] ?: [UIImage systemImageNamed:@"link" withConfiguration:configuration];
+    if (!symbol) return nil;
+    UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(side, side)];
+    UIImage *padded = [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
+        [symbol drawInRect:CGRectMake((side - symbol.size.width) / 2.0, (side - symbol.size.height) / 2.0, symbol.size.width, symbol.size.height)];
+    }];
+    return [padded imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+}
+
+@interface IPBCreditCell : PSTableCell
+@end
+
+// A row carrying ipbBranch hangs off the row above it: a line from that row's avatar bends into it,
+// and the row above, carrying ipbBranchBelow, drops its separator and draws the top of the line.
+@implementation IPBCreditCell {
+    UIImageView *_avatarView;
+    CAShapeLayer *_branch;
+}
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)identifier specifier:(PSSpecifier *)specifier {
+    self = [super initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:identifier specifier:specifier];
+    if (!self) return nil;
+    self.detailTextLabel.text = [specifier propertyForKey:@"subtitle"] ?: @"";
+    self.detailTextLabel.textColor = [UIColor systemGrayColor];
+    self.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    BOOL branch = [[specifier propertyForKey:@"ipbBranch"] isEqual:@YES];
+    if (branch || [[specifier propertyForKey:@"ipbBranchBelow"] isEqual:@YES]) {
+        _branch = [CAShapeLayer layer];
+        _branch.fillColor = nil;
+        _branch.lineWidth = 1.5;
+        _branch.lineCap = kCALineCapRound;
+        [self.contentView.layer addSublayer:_branch];
+    }
+    if (branch) {
+        // An empty slot as wide as the avatar, so the text lines up with the name above.
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(kIPBAvatarSide, 16.0), NO, [UIScreen mainScreen].scale);
+        [specifier setProperty:UIGraphicsGetImageFromCurrentImageContext() forKey:@"iconImage"];
+        UIGraphicsEndImageContext();
+        UIImageSymbolConfiguration *small = [UIImageSymbolConfiguration configurationWithPointSize:11.0 weight:UIImageSymbolWeightSemibold];
+        NSString *symbolName = [specifier propertyForKey:@"ipbBranchSymbol"];
+        if (![symbolName isKindOfClass:[NSString class]]) symbolName = @"chevron.left.forwardslash.chevron.right";
+        NSTextAttachment *mark = [[NSTextAttachment alloc] init];
+        mark.image = [[UIImage systemImageNamed:symbolName withConfiguration:small] imageWithTintColor:[UIColor linkColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
+        NSMutableAttributedString *title = [[NSMutableAttributedString alloc] init];
+        if (mark.image) [title appendAttributedString:[NSAttributedString attributedStringWithAttachment:mark]];
+        [title appendAttributedString:[[NSAttributedString alloc] initWithString:[@"  " stringByAppendingString:specifier.name ?: @""]
+            attributes:@{ NSFontAttributeName: [UIFont systemFontOfSize:13.0], NSForegroundColorAttributeName: [UIColor linkColor] }]];
+        self.textLabel.attributedText = title;
+        // nil rather than empty, so the subtitle style centres the one line.
+        self.detailTextLabel.text = nil;
+        return self;
+    }
+    UIImage *avatar = [specifier propertyForKey:@"ipbAvatar"];
+    if (![avatar isKindOfClass:[UIImage class]]) {
+        self.imageView.tintColor = [UIColor secondaryLabelColor];
+        return self;
+    }
+    // An empty image of the right size, so the row lays out before the avatar is drawn into it.
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(kIPBAvatarSide, kIPBAvatarSide), NO, [UIScreen mainScreen].scale);
+    [specifier setProperty:UIGraphicsGetImageFromCurrentImageContext() forKey:@"iconImage"];
+    UIGraphicsEndImageContext();
+    _avatarView = [[UIImageView alloc] initWithFrame:self.imageView.bounds];
+    _avatarView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    _avatarView.contentMode = UIViewContentModeScaleAspectFill;
+    _avatarView.clipsToBounds = YES;
+    _avatarView.layer.cornerRadius = kIPBAvatarSide * 0.5;
+    _avatarView.layer.minificationFilter = kCAFilterTrilinear;
+    _avatarView.image = avatar;
+    [self.imageView addSubview:_avatarView];
+    return self;
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    if (!_branch) return;
+    BOOL branch = [[self.specifier propertyForKey:@"ipbBranch"] isEqual:@YES];
+    BOOL below = [[self.specifier propertyForKey:@"ipbBranchBelow"] isEqual:@YES];
+    if (below) {
+        for (UIView *view in self.subviews) {
+            if ([NSStringFromClass([view class]) hasSuffix:@"SeparatorView"]) view.hidden = YES;
+        }
+    }
+    _branch.strokeColor = [[UIColor systemGray3Color] resolvedColorWithTraitCollection:self.traitCollection].CGColor;
+    CGRect slot = [self.contentView convertRect:self.imageView.bounds fromView:self.imageView];
+    CGFloat x = round(CGRectGetMidX(slot));
+    UIBezierPath *path = [UIBezierPath bezierPath];
+    if (branch) {
+        CGFloat y = round(CGRectGetMidY(slot)), r = 6.0;
+        [path moveToPoint:CGPointMake(x, 0)];
+        [path addLineToPoint:CGPointMake(x, y - r)];
+        [path addQuadCurveToPoint:CGPointMake(x + r, y) controlPoint:CGPointMake(x, y)];
+        [path addLineToPoint:CGPointMake(CGRectGetMaxX(slot), y)];
+        // A branch with another below it carries the line on to the next one.
+        if (below) {
+            [path moveToPoint:CGPointMake(x, y - r)];
+            [path addLineToPoint:CGPointMake(x, CGRectGetMaxY(self.contentView.bounds))];
+        }
+    } else {
+        [path moveToPoint:CGPointMake(x, CGRectGetMaxY(slot) + 3.0)];
+        [path addLineToPoint:CGPointMake(x, CGRectGetMaxY(self.contentView.bounds))];
+    }
+    _branch.path = path.CGPath;
+}
+
+- (void)traitCollectionDidChange:(UITraitCollection *)previous {
+    [super traitCollectionDidChange:previous];
+    [self setNeedsLayout];
+}
+
+@end
+
 @implementation IPBRootListController
 -(NSArray *)specifiers {
     if (!_specifiers) {
@@ -172,6 +288,7 @@ static CGFloat IPBNameBaselineOffset(CGFloat scale) {
         // Root.plist opens with a group, which is the one the header needs after it.
         NSMutableArray *specifiers = [NSMutableArray arrayWithObject:header];
         [specifiers addObjectsFromArray:[self loadSpecifiersFromPlistName:@"Root" target:self]];
+        [self addCreditsTo:specifiers];
         _specifiers = specifiers;
     }
 
@@ -180,20 +297,45 @@ static CGFloat IPBNameBaselineOffset(CGFloat scale) {
     return _specifiers;
 }
 
--(void)sourceCode {
-    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://github.com/sergealagon/Immortalizer/"] withCompletionHandler:nil];
+- (void)addCreditsTo:(NSMutableArray *)specifiers {
+    PSSpecifier *credits = [PSSpecifier preferenceSpecifierNamed:@"Credits" target:self set:NULL get:NULL detail:nil cell:PSGroupCell edit:nil];
+    [credits setProperty:@"© CySxL 2026" forKey:@"footerText"];
+    [specifiers addObject:credits];
+    // name, subtitle, link, picture, symbol; a row with a symbol is a branch of the row above it
+    NSArray *rows = @[
+        @[@"sergy", @"Original Developer", @"https://github.com/sergealagon", @"", @""],
+        @[@"Source Code", @"", @"https://github.com/sergealagon/Immortalizer", @"", @"chevron.left.forwardslash.chevron.right"],
+        @[@"Donate", @"", @"https://buymeacoffee.com/sergy", @"", @"heart"],
+        @[@"CySxL", @"Maintainer · roothide Port", @"https://github.com/CySxL", @"avatar", @""],
+        @[@"Tip on Ko-fi", @"", @"https://ko-fi.com/cysxl", @"", @"cup.and.saucer"]
+    ];
+    PSSpecifier *previous = nil;
+    for (NSArray *row in rows) {
+        PSSpecifier *credit = [PSSpecifier preferenceSpecifierNamed:row[0] target:self set:NULL get:NULL detail:nil cell:PSLinkCell edit:nil];
+        [credit setProperty:[IPBCreditCell class] forKey:@"cellClass"];
+        [credit setProperty:row[1] forKey:@"subtitle"];
+        [credit setProperty:row[2] forKey:@"url"];
+        NSString *picture = row[3];
+        if ([row[4] length]) {
+            [credit setProperty:@YES forKey:@"ipbBranch"];
+            [credit setProperty:row[4] forKey:@"ipbBranchSymbol"];
+            [credit setProperty:@34 forKey:@"height"];
+            [previous setProperty:@YES forKey:@"ipbBranchBelow"];
+        } else {
+            UIImage *avatar = picture.length ? [UIImage imageNamed:picture inBundle:[NSBundle bundleForClass:[self class]] withConfiguration:nil] : nil;
+            if (avatar) [credit setProperty:avatar forKey:@"ipbAvatar"];
+            else [credit setProperty:IPBSymbol(@"chevron.left.forwardslash.chevron.right", kIPBAvatarSide) forKey:@"iconImage"];
+        }
+        credit->action = @selector(openCredit:);
+        [specifiers addObject:credit];
+        previous = credit;
+    }
 }
 
--(void)supportPage {
-    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://buymeacoffee.com/sergy"] withCompletionHandler:nil];
-}
-
--(void)socialPage {
-    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://x.com/@srgndrlgn"] withCompletionHandler:nil];
-}
-
--(void)maintainerPage {
-    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://github.com/CySxL"] withCompletionHandler:nil];
+- (void)openCredit:(PSSpecifier *)specifier {
+    NSString *link = [specifier propertyForKey:@"url"];
+    NSURL *url = [link isKindOfClass:[NSString class]] ? [NSURL URLWithString:link] : nil;
+    if (url) [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
 }
 
 - (void)localizeSpecifiers:(NSArray *)specifiers {

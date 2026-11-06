@@ -127,61 +127,6 @@
 			<key>PostNotification</key>
 			<string>com.sergy.immortalizer.preferenceschanged.toast</string>
 		</dict>
-
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>label</key>
-			<string>DEVELOPER</string>
-		</dict>
-		<dict>
-			<key>action</key>
-			<string>supportPage</string>
-			<key>cell</key>
-			<string>PSButtonCell</string>
-			<key>label</key>
-			<string>LOVE_MY_TWEAK</string>
-			<key>icon</key>
-			<string>coffee.png</string>
-		</dict>
-		<dict>
-			<key>action</key>
-			<string>sourceCode</string>
-			<key>cell</key>
-			<string>PSButtonCell</string>
-			<key>label</key>
-			<string>SOURCE_CODE</string>
-			<key>icon</key>
-			<string>github.png</string>
-		</dict>
-		<dict>
-			<key>action</key>
-			<string>socialPage</string>
-			<key>cell</key>
-			<string>PSButtonCell</string>
-			<key>label</key>
-			<string>FOLLOW_ME</string>
-			<key>icon</key>
-			<string>twitter.png</string>
-		</dict>
-		<dict>
-			<key>action</key>
-			<string>maintainerPage</string>
-			<key>cell</key>
-			<string>PSButtonCell</string>
-			<key>label</key>
-			<string>ROOTHIDE_PORT</string>
-			<key>icon</key>
-			<string>github.png</string>
-		</dict>
-
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string>© 2024 Serge Alagon (sergy)</string>
-		</dict>
-
 	</array>
 	<key>title</key>
 	<string>Immortalizer</string>

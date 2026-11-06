@@ -16,11 +16,6 @@
 "TOAST" = "Toast";
 "TOAST_FOOTER" = "You can enable/disable toasts that shows the state of the app\nImmortalized - when app is immortalized\nAt rest - when you disable Immortalizer on the app\nTerminated - when app gets terminated while Immortalizer is still enabled.";
 "ENABLE_TOAST_MESSAGE" = "Enable Toast Message";
-"DEVELOPER" = "Developer";
-"LOVE_MY_TWEAK" = "Love my tweak? I love coffee :D";
-"SOURCE_CODE" = "Source code :)";
-"FOLLOW_ME" = "Follow me on Twitter!";
-"ROOTHIDE_PORT" = "roothide support & fixes by CySxL";
 
 "LMAO" = "Lmao";
 "IMMORTALIZED" = "Immortalized";

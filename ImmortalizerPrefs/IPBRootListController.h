@@ -20,7 +20,3 @@
 @interface IPBRootListController : PSListController
 - (void)localizeSpecifiers:(NSArray *)specifiers;
 @end
-
-@interface UIApplication ()
--(void)openURL:(id)arg1 withCompletionHandler:(id)arg2 ;
-@end
