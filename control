@@ -2,9 +2,14 @@ Package: com.sergy.immortalizer
 Name: Immortalizer
 Version: 2.8.2
 Architecture: iphoneos-arm
-Description: Foreground your apps even if they are in the background!
-Maintainer: sergy
-Author: sergy
-Section: Tweaks
-Icon: https://media.havoc.app/672ab6f3a80bcf5e2e0abe8c?w=1920&q=75
 Depends: mobilesubstrate (>= 0.9.5000), preferenceloader, com.opa334.altlist, com.opa334.ccsupport
+Description: A fork of sergy's Immortalizer.
+ Keeps chosen apps running in the foreground while they are in the background.
+ * immortalize an app from its Home Screen menu.
+ * show an indicator & a toast for each app's state.
+ * allow notifications from an immortalized app, per app.
+ * toggle it from a Control Center module.
+Author: sergy, CySxL
+Maintainer: CySxL
+Icon: https://media.havoc.app/672ab6f3a80bcf5e2e0abe8c?w=1920&q=75
+Section: Tweaks
