@@ -1,8 +1,11 @@
-Package: com.sergy.immortalizer
+Package: com.cysxl.immortalizer
 Name: Immortalizer
 Version: 2.8.2
 Architecture: iphoneos-arm
 Depends: mobilesubstrate (>= 0.9.5000), preferenceloader, com.opa334.altlist, com.opa334.ccsupport
+Conflicts: com.sergy.immortalizer
+Replaces: com.sergy.immortalizer
+Provides: com.sergy.immortalizer
 Description: A fork of sergy's Immortalizer.
  Keeps chosen apps running in the foreground while they are in the background.
  * immortalize an app from its Home Screen menu.
